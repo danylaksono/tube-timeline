@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Interactive Timeline</title>
+  <script src="https://d3js.org/d3.v7.min.js"></script>
+  <style>
+    body { margin: 0; font-family: sans-serif; }
+    svg { width: 100%; height: 100vh; background: #f9f9f9; }
+    .milestone-icon { font-size: 16px; cursor: pointer; text-anchor: middle; alignment-baseline: middle; }
+    .milestone-label { font-size: 12px; text-anchor: middle; }
+    .track-line { stroke-width: 32; opacity: 0.1; }
+    .today-line { stroke: red; stroke-width: 3; stroke-dasharray: 4; }
+    .tooltip {
+      position: absolute;
+      background: #333;
+      color: #fff;
+      padding: 6px 10px;
+      border-radius: 4px;
+      font-size: 12px;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.2s;
+    }
+  </style>
+</head>
+<body>
+<svg></svg>
+<div class="tooltip" id="tooltip"></div>
+
+<script>const data = [
+  {
+    track: "Full Papers",
+    color: "#1f77b4",
+    dates: [
+      { date: "11/2024", name: "Abstract deadline", type: "submission", url: "" },
+      { date: "12/2024", name: "Full paper deadline", type: "submission", url: "" },
+      { date: "02/2025", name: "First Round Notification", type: "notification", url: "" },
+      { date: "03/2025", name: "Revised Submission", type: "submission", url: "" },
+      { date: "03/2025", name: "Final Notification", type: "notification", url: "" },
+      { date: "04/2025", name: "Camera Ready Version", type: "submission", url: "" }
+    ]
+  },
+  {
+    track: "Short Papers",
+    color: "#ff7f0e",
+    dates: [
+      { date: "02/2025", name: "Submission deadline", type: "submission", url: "" },
+      { date: "04/2025", name: "Acceptance notification", type: "notification", url: "" },
+      { date: "04/2025", name: "Camera Ready Version", type: "submission", url: "" }
+    ]
+  },
+  {
+    track: "STARs",
+    color: "#2ca02c",
+    dates: [
+      { date: "10/2024", name: "STAR Sketch Submission", type: "submission", url: "" },
+      { date: "11/2024", name: "Invitation for Full STAR", type: "notification", url: "" },
+      { date: "01/2025", name: "Full STAR Submission", type: "submission", url: "" },
+      { date: "03/2025", name: "Full STAR Notification", type: "notification", url: "" },
+      { date: "03/2025", name: "Second Round Submission", type: "submission", url: "" },
+      { date: "04/2025", name: "Second Review Notification", type: "notification", url: "" },
+      { date: "04/2025", name: "Camera-Ready Deadline", type: "submission", url: "" }
+    ]
+  },
+  {
+    track: "Panels & Tutorials",
+    color: "#d62728",
+    dates: [
+      { date: "02/2025", name: "Submission deadline", type: "submission", url: "" },
+      { date: "03/2025", name: "Conditional Notification", type: "notification", url: "" },
+      { date: "04/2025", name: "Camera-Ready Abstract", type: "submission", url: "" }
+    ]
+  },
+  {
+    track: "Workshops",
+    color: "#9467bd",
+    dates: [
+      { date: "11/2024", name: "Proposal Submission", type: "submission", url: "" },
+      { date: "11/2024", name: "Notification", type: "notification", url: "" }
+    ]
+  },
+  {
+    track: "Education Papers",
+    color: "#8c564b",
+    dates: [
+      { date: "01/2025", name: "Submission", type: "submission", url: "" },
+      { date: "03/2025", name: "Notification", type: "notification", url: "" },
+      { date: "03/2025", name: "Camera-Ready", type: "submission", url: "" }
+    ]
+  },
+  {
+    track: "Posters & Demos",
+    color: "#e377c2",
+    dates: [
+      { date: "04/2025", name: "Submission", type: "submission", url: "" },
+      { date: "04/2025", name: "Notification", type: "notification", url: "" },
+      { date: "04/2025", name: "Camera-Ready", type: "submission", url: "" }
+    ]
+  }
+];
+
+
+const typeIcons = {
+  submission: "📄",     // For anything being submitted
+  notification: "📢",   // For acceptance or review notifications
+  review: "🔍",         // For review phases (internal or external)
+  attendance: "🧑‍🏫",   // For events like presentations or intros
+  cameraReady: "🖨️",    // Specifically for final camera-ready submissions
+  invitation: "✉️",     // For invitations to submit (e.g., for STARs)
+  abstract: "📝"         // For abstract deadlines
+};
+
+const parseDate = str => {
+  if (/^\d{2}\/\d{2}\/\d{2}$/.test(str)) return d3.timeParse("%d/%m/%y")(str);
+  if (/^\d{2}\/\d{4}$/.test(str)) return d3.timeParse("%m/%Y")(str);
+  return null;
+};
+
+const today = new Date();
+data.forEach(track => track.dates.forEach(d => d.parsed = parseDate(d.date)));
+const allDates = [...new Set(data.flatMap(t => t.dates.map(d => d.parsed)))].sort((a, b) => a - b);
+const trackNames = data.map(d => d.track);
+const svg = d3.select("svg");
+const tooltip = d3.select("#tooltip");
+
+function render() {
+  svg.selectAll("*").remove();
+  const isHorizontal = window.innerWidth >= 700;
+
+  const margin = { top: 40, right: 50, bottom: 40, left: 50 };
+  const width = svg.node().clientWidth - margin.left - margin.right;
+  const height = svg.node().clientHeight - margin.top - margin.bottom;
+
+  const g = svg.append("g").attr("transform", `translate(${margin.left},${margin.top})`);
+  const spacing = isHorizontal ? 50 : 60;
+
+  let xScale, yScale;
+
+  if (isHorizontal) {
+    xScale = d3.scaleTime().domain(d3.extent(allDates)).range([0, width]);
+    yScale = d3.scalePoint().domain(trackNames).range([0, height]).padding(0.5);
+
+    // Track lines
+    g.selectAll(".track-line")
+      .data(data)
+      .enter()
+      .append("line")
+      .attr("class", "track-line")
+      .attr("x1", 0)
+      .attr("x2", width)
+      .attr("y1", d => yScale(d.track))
+      .attr("y2", d => yScale(d.track))
+      .attr("stroke", d => d.color);
+  } else {
+    xScale = d3.scalePoint().domain(trackNames).range([0, width]).padding(0.5);
+    yScale = d3.scaleTime().domain(d3.extent(allDates)).range([0, height]);
+
+    g.selectAll(".track-line")
+      .data(data)
+      .enter()
+      .append("line")
+      .attr("class", "track-line")
+      .attr("y1", 0)
+      .attr("y2", height)
+      .attr("x1", d => xScale(d.track))
+      .attr("x2", d => xScale(d.track))
+      .attr("stroke", d => d.color);
+  }
+
+  // Draw milestones
+  data.forEach(track => {
+    const pos = isHorizontal
+      ? { fixed: yScale(track.track), axis: d => xScale(d.parsed) }
+      : { fixed: xScale(track.track), axis: d => yScale(d.parsed) };
+
+    g.selectAll()
+      .data(track.dates)
+      .enter()
+      .append("text")
+      .attr("class", "milestone-icon")
+      .attr(isHorizontal ? "x" : "y", d => pos.axis(d))
+      .attr(isHorizontal ? "y" : "x", pos.fixed)
+      .text(d => typeIcons[d.type])
+      .on("mouseover", function(event, d) {
+        tooltip.style("opacity", 1)
+          .html(`<strong>${d.name}</strong><br>${d.date}<br>${d.type}`);
+      })
+      .on("mousemove", event => {
+        tooltip.style("left", (event.pageX + 10) + "px")
+               .style("top", (event.pageY - 28) + "px");
+      })
+      .on("mouseout", () => {
+        tooltip.style("opacity", 0);
+      })
+      .on("click", (_, d) => {
+        if (d.url) window.open(d.url, "_blank");
+      });
+
+    g.selectAll()
+      .data(track.dates)
+      .enter()
+      .append("text")
+      .attr("class", "milestone-label")
+      .attr(isHorizontal ? "x" : "y", d => pos.axis(d))
+      .attr(isHorizontal ? "y" : "x", pos.fixed + spacing / 2)
+      .text(d => d.name);
+  });
+
+  // Today line
+  if (today >= allDates[0] && today <= allDates[allDates.length - 1]) {
+    const linePos = isHorizontal ? xScale(today) : yScale(today);
+    g.append("line")
+      .attr("class", "today-line")
+      .attr(isHorizontal ? "x1" : "y1", linePos)
+      .attr(isHorizontal ? "x2" : "y2", linePos)
+      .attr(isHorizontal ? "y1" : "x1", 0)
+      .attr(isHorizontal ? "y2" : "x2", isHorizontal ? height : width);
+  }
+}
+
+render();
+window.addEventListener("resize", render);
+</script>
+</body>
+</html>

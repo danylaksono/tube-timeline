@@ -84,7 +84,7 @@ Feel free to contribute improvements or extend this timeline for your own confer
 
 ## Author
 
-[![velitchko's gh](https://avatars.githubusercontent.com/u/velitchko?v=4&s=64)](https://github.com/velitchko)  
+[![velitchko's github](https://github.com/velitchko.png?size=40)](https://github.com/velitchko)  
 **velitchko** – [@velitchko](https://github.com/velitchko)
 
 Feel free to reach out or follow for updates!

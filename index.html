@@ -1,16 +1,45 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang='en'>
+
 <head>
-  <meta charset="UTF-8" />
+  <meta charset='UTF-8' />
   <title>Interactive Timeline</title>
-  <script src="https://d3js.org/d3.v7.min.js"></script>
+  <script src='https://d3js.org/d3.v7.min.js'></script>
   <style>
-    body { margin: 0; font-family: sans-serif; }
-    svg { width: 100%; height: 100vh; background: #f9f9f9; }
-    .milestone-icon { font-size: 16px; cursor: pointer; text-anchor: middle; alignment-baseline: middle; }
-    .milestone-label { font-size: 12px; text-anchor: middle; }
-    .track-line { stroke-width: 32; opacity: 0.5; }
-    .today-line { stroke: #888; stroke-width: 3; stroke-dasharray: 4; }
+    body {
+      margin: 0;
+      font-family: sans-serif;
+    }
+
+    svg {
+      width: 100%;
+      height: 100vh;
+      background: #f9f9f9;
+    }
+
+    .milestone-icon {
+      font-size: 16px;
+      cursor: pointer;
+      text-anchor: middle;
+      alignment-baseline: middle;
+    }
+
+    .milestone-label {
+      font-size: 12px;
+      text-anchor: middle;
+    }
+
+    .track-line {
+      stroke-width: 32;
+      opacity: 0.5;
+    }
+
+    .today-line {
+      stroke: #888;
+      stroke-width: 3;
+      stroke-dasharray: 4;
+    }
+
     .tooltip {
       position: absolute;
       background: #333;
@@ -24,341 +53,356 @@
     }
   </style>
 </head>
+
 <body>
-<svg></svg>
-<div class="tooltip" id="tooltip"></div>
+  <svg></svg>
+  <div class='tooltip' id='tooltip'></div>
 
-<script>const data = [
-  {
-    track: "Full Papers",
-    label: "FP",
-    color: "#1F77B4", // Bright blue
-    dates: [
-      { date: "11/2024", name: "Abstract deadline", type: "start", url: "" },
-      { date: "12/2024", name: "Full paper deadline", type: "submission", url: "" },
-      { date: "02/2025", name: "First Round Notification", type: "notification", url: "" },
-      { date: "03/2025", name: "Revised Submission", type: "submission", url: "" },
-      { date: "03/2025", name: "Final Notification", type: "notification", url: "" },
-      { date: "04/2025", name: "Camera Ready Version", type: "end", url: "" }
-    ]
-    },
-    {
-    track: "Short Papers",
-    label: "SP",
-    color: "#E377C2", // Vivid red
-    dates: [
-      { date: "02/2025", name: "Submission deadline", type: "start", url: "" },
-      { date: "04/2025", name: "Acceptance notification", type: "notification", url: "" },
-      { date: "04/2025", name: "Camera Ready Version", type: "end", url: "" }
-    ]
-    },
-    {
-    track: "State of the Art Reports",
-    label: "STAR",
-    color: "#FFDD44", // Bright green
-    dates: [
-      { date: "10/2024", name: "STAR Sketch Submission", type: "start", url: "" },
-      { date: "11/2024", name: "Invitation for Full STAR", type: "notification", url: "" },
-      { date: "01/2025", name: "Full STAR Submission", type: "submission", url: "" },
-      { date: "03/2025", name: "Full STAR Notification", type: "notification", url: "" },
-      { date: "03/2025", name: "Second Round Submission", type: "submission", url: "" },
-      { date: "04/2025", name: "Second Review Notification", type: "notification", url: "" },
-      { date: "04/2025", name: "Camera-Ready Deadline", type: "end", url: "" }
-    ]
-    },
-    {
-    track: "Panels & Tutorials",
-    label: "P&T",
-    color: "#2CA02C", // Punchy yellow
-    dates: [
-      { date: "02/2025", name: "Submission deadline", type: "start", url: "" },
-      { date: "03/2025", name: "Conditional Notification", type: "notification", url: "" },
-      { date: "04/2025", name: "Camera-Ready Abstract", type: "end", url: "" }
-    ]
-    },
-    {
-    track: "Workshops",
-    label: "WS",
-    color: "#9467BD", // Vivid purple
-    dates: [
-      { date: "11/2024", name: "Proposal Submission", type: "start", url: "" },
-      { date: "02/2025", name: "Notification", type: "end", url: "" }
-    ]
-    },
-    {
-    track: "Education Papers",
-    label: "ED",
-    color: "#17BECF", // Bright orange
-    dates: [
-      { date: "01/2025", name: "Submission", type: "start", url: "" },
-      { date: "03/2025", name: "Notification", type: "notification", url: "" },
-      { date: "03/2025", name: "Camera-Ready", type: "end", url: "" }
-    ]
-    },
-    {
-    track: "Posters & Demos",
-    label: "P&D",
-    color: "#FF7F0E", // Bright cyan
-    dates: [
-      { date: "02/2025", name: "Submission", type: "start", url: "" },
-      { date: "04/2025", name: "Notification", type: "notification", url: "" },
-      { date: "05/2025", name: "Camera-Ready", type: "end", url: "" }
-    ]
-    }
-];
+  <script>const data = [
+      {
+        track: 'Full Papers',
+        label: 'FP',
+        color: '#1F77B4', // Bright blue
+        dates: [
+          { date: '11/2024', name: 'Abstract deadline', type: 'start', url: '' },
+          { date: '12/2024', name: 'Full paper deadline', type: 'submission', url: '' },
+          { date: '02/2025', name: 'First Round Notification', type: 'notification', url: '' },
+          { date: '03/2025', name: 'Revised Submission', type: 'submission', url: '' },
+          { date: '03/2025', name: 'Final Notification', type: 'notification', url: '' },
+          { date: '04/2025', name: 'Camera Ready Version', type: 'end', url: '' }
+        ]
+      },
+      {
+        track: 'Short Papers',
+        label: 'SP',
+        color: '#E377C2', // Vivid red
+        dates: [
+          { date: '02/2025', name: 'Submission deadline', type: 'start', url: '' },
+          { date: '04/2025', name: 'Acceptance notification', type: 'notification', url: '' },
+          { date: '04/2025', name: 'Camera Ready Version', type: 'end', url: '' }
+        ]
+      },
+      {
+        track: 'State of the Art Reports',
+        label: 'STAR',
+        color: '#FFDD44', // Bright green
+        dates: [
+          { date: '10/2024', name: 'STAR Sketch Submission', type: 'start', url: '' },
+          { date: '11/2024', name: 'Invitation for Full STAR', type: 'notification', url: '' },
+          { date: '01/2025', name: 'Full STAR Submission', type: 'submission', url: '' },
+          { date: '03/2025', name: 'Full STAR Notification', type: 'notification', url: '' },
+          { date: '03/2025', name: 'Second Round Submission', type: 'submission', url: '' },
+          { date: '04/2025', name: 'Second Review Notification', type: 'notification', url: '' },
+          { date: '04/2025', name: 'Camera-Ready Deadline', type: 'end', url: '' }
+        ]
+      },
+      {
+        track: 'Panels & Tutorials',
+        label: 'P&T',
+        color: '#2CA02C', // Punchy yellow
+        dates: [
+          { date: '02/2025', name: 'Submission deadline', type: 'start', url: '' },
+          { date: '03/2025', name: 'Conditional Notification', type: 'notification', url: '' },
+          { date: '04/2025', name: 'Camera-Ready Abstract', type: 'end', url: '' }
+        ]
+      },
+      {
+        track: 'Workshops',
+        label: 'WS',
+        color: '#9467BD', // Vivid purple
+        dates: [
+          { date: '11/2024', name: 'Proposal Submission', type: 'start', url: '' },
+          { date: '02/2025', name: 'Notification', type: 'end', url: '' }
+        ]
+      },
+      {
+        track: 'Education Papers',
+        label: 'ED',
+        color: '#17BECF', // Bright orange
+        dates: [
+          { date: '01/2025', name: 'Submission', type: 'start', url: '' },
+          { date: '03/2025', name: 'Notification', type: 'notification', url: '' },
+          { date: '03/2025', name: 'Camera-Ready', type: 'end', url: '' }
+        ]
+      },
+      {
+        track: 'Posters & Demos',
+        label: 'P&D',
+        color: '#FF7F0E', // Bright cyan
+        dates: [
+          { date: '02/2025', name: 'Submission', type: 'start', url: '' },
+          { date: '04/2025', name: 'Notification', type: 'notification', url: '' },
+          { date: '05/2025', name: 'Camera-Ready', type: 'end', url: '' }
+        ]
+      }
+    ];
 
+    const typeIcons = {
+      start: '📄',     // For anything being submitted
+      abstract: '📝',         // For abstract deadlines
+      submission: '📬', // For submission deadlines
+      review: '🔍',         // For review phases (internal or external)
+      notification: '📢',   // For acceptance or review notifications
+      cameraReady: '🖨️',    // Specifically for final camera-ready submissions
+      end: '✅',         // For final deadlines or camera-ready versions
+      invitation: '✉️',     // For invitations to submit (e.g., for STARs)
+    };
 
-const typeIcons = {
-  start: "📄",     // For anything being submitted
-  abstract: "📝",         // For abstract deadlines
-  submission: "📬", // For submission deadlines
-  review: "🔍",         // For review phases (internal or external)
-  notification: "📢",   // For acceptance or review notifications
-  cameraReady: "🖨️",    // Specifically for final camera-ready submissions
-  end: "✅",         // For final deadlines or camera-ready versions
-  invitation: "✉️",     // For invitations to submit (e.g., for STARs)
-};
+    const parseDate = str => {
+      if (/^\d{2}\/\d{2}\/\d{2}$/.test(str)) return d3.timeParse('%d/%m/%y')(str);
+      if (/^\d{2}\/\d{4}$/.test(str)) return d3.timeParse('%m/%Y')(str);
+      return null;
+    };
 
-const parseDate = str => {
-  if (/^\d{2}\/\d{2}\/\d{2}$/.test(str)) return d3.timeParse("%d/%m/%y")(str);
-  if (/^\d{2}\/\d{4}$/.test(str)) return d3.timeParse("%m/%Y")(str);
-  return null;
-};
-
-const today = new Date();
-data.forEach(track => track.dates.forEach(d => d.parsed = parseDate(d.date)));
-const allDates = [...new Set(data.flatMap(t => t.dates.map(d => d.parsed)))].sort((a, b) => a - b);
-const trackNames = data.map(d => d.track);
-const svg = d3.select("svg");
-const tooltip = d3.select("#tooltip");
-
-function render() {
-  svg.selectAll("*").remove();
-  const isHorizontal = window.innerWidth >= 700;
-
-  const margin = { top: 40, right: 50, bottom: 40, left: 50 };
-  const width = svg.node().clientWidth - margin.left - margin.right;
-  const height = svg.node().clientHeight - margin.top - margin.bottom;
-
-  const g = svg.append("g").attr("transform", `translate(${margin.left},${margin.top})`);
-  const spacing = isHorizontal ? 50 : 60;
-  let xScale, yScale;
-  if (isHorizontal) {
-    xScale = d3.scaleTime().domain(d3.extent(allDates)).range([margin.left, width]);
-    // Uniform vertical spacing for lanes
-    const laneCount = trackNames.length;
-    const laneSpacing = (height - 32) / (laneCount - 1);
-    yScale = d3.scalePoint().domain(trackNames).range([16, height - 16]).padding(0);
-
-    // Track lines
-    g.selectAll(".track-line")
-      .data(data)
-      .enter()
-      .append("line")
-      .attr("class", "track-line")
-      .attr("x1", d => {
-        const startDateObj = d.dates.find(date => date.type === "start");
-        return startDateObj ? xScale(startDateObj.parsed) : 0;
-      })
-      .attr("x2", d => {
-        const endDateObj = d.dates.find(date => date.type === "end");
-        return endDateObj ? xScale(endDateObj.parsed) : xScale(d.dates[d.dates.length - 1].parsed);
-      })
-      .attr("y1", d => yScale(d.track))
-      .attr("y2", d => yScale(d.track))
-      .attr("stroke", d => d.color);
-
-    // Track labels (left of each line)
-    g.selectAll(".track-label")
-      .data(data)
-      .enter()
-      .append("text")
-      .attr("class", "track-label")
-      .attr("x", 15)
-      .attr("y", d => yScale(d.track))
-      .attr("dy", "0.35em")
-      .attr("text-anchor", "end")
-      .attr("font-weight", "bold")
-      .attr("fill", d => d.color)
-      .text(d => d.label || d.track)
-      .on("mouseover", function(event, d) {
-        tooltip.style("opacity", 1)
-          .html(`<strong>${d.track}</strong>`);
-      })
-      .on("mousemove", event => {
-        tooltip.style("left", (event.pageX + 10) + "px")
-             .style("top", (event.pageY - 28) + "px");
-      })
-      .on("mouseout", () => {
-        tooltip.style("opacity", 0);
-      });
-
-  } else {
-    // Uniform horizontal spacing for lanes
-    const laneCount = trackNames.length;
-    const laneSpacing = (width - 32) / (laneCount - 1);
-    xScale = d3.scalePoint().domain(trackNames).range([16, width - 16]).padding(0);
-    yScale = d3.scaleTime().domain(d3.extent(allDates)).range([0, height]);
-
-    g.selectAll(".track-line")
-      .data(data)
-      .enter()
-      .append("line")
-      .attr("class", "track-line")
-      .attr("y1", d => {
-        const startDateObj = d.dates.find(date => date.type === "start");
-        return startDateObj ? yScale(startDateObj.parsed) : 0;
-      })
-      .attr("y2", d => {
-        const endDateObj = d.dates.find(date => date.type === "end");
-        return endDateObj ? yScale(endDateObj.parsed) : yScale(d.dates[d.dates.length - 1].parsed);
-      })
-      .attr("x1", d => xScale(d.track))
-      .attr("x2", d => xScale(d.track))
-      .attr("stroke", d => d.color);
-
-    // Track labels (top of each line)
-    g.selectAll(".track-label")
-      .data(data)
-      .enter()
-      .append("text")
-      .attr("class", "track-label")
-      .attr("x", d => xScale(d.track))
-      .attr("y", -15)
-      .attr("text-anchor", "middle")
-      .attr("font-weight", "bold")
-      .attr("fill", d => d.color)
-      .text(d => d.label || d.track)
-      .on("mouseover", function(event, d) {
-        tooltip.style("opacity", 1)
-          .html(`<strong>${d.track}</strong>`);
-      })
-      .on("mousemove", event => {
-        tooltip.style("left", (event.pageX + 10) + "px")
-             .style("top", (event.pageY - 28) + "px");
-      })
-      .on("mouseout", () => {
-        tooltip.style("opacity", 0);
-      });
-
-  }
-
-  // Draw milestones
-  data.forEach(track => {
+    const today = new Date();
+    data.forEach(track => track.dates.forEach(d => d.parsed = parseDate(d.date)));
     
-    const pos = isHorizontal
-      ? { fixed: yScale(track.track), axis: d => xScale(d.parsed) }
-      : { fixed: xScale(track.track), axis: d => yScale(d.parsed) };
-      // Draw milestone circles with icons inside
-      g.selectAll()
-        .data(track.dates)
-        .enter()
-        .append("g")
-        .attr("transform", d => {
-        const x = isHorizontal ? pos.axis(d) : pos.fixed;
-        const y = isHorizontal ? pos.fixed : pos.axis(d);
-        return `translate(${x},${y})`;
-        })
-        .each(function(d) {
-        // Draw circle
-        d3.select(this)
-          .append("circle")
-          .attr("r", 16)
-          .attr("fill", "#fff")
-          .attr("stroke", track.color)
-          .attr("stroke-width", 2);
+    const allDates = [...new Set(data.flatMap(t => t.dates.map(d => d.parsed)))].sort((a, b) => a - b);
+    const trackNames = data.map(d => d.track);
+    const svg = d3.select('svg');
+    const tooltip = d3.select('#tooltip');
 
-        // Draw icon
-        d3.select(this)
-          .append("text")
-          .attr("class", "milestone-icon")
-          .attr("dy", "0.35em")
-          .text(typeIcons[d.type]);
-        })
-        .on("mouseover", function(event, d) {
-        tooltip.style("opacity", 1)
-          .html(`<strong>${d.name}</strong><br>${d.date}<br>${d.type}`);
-        })
-        .on("mousemove", event => {
-        tooltip.style("left", (event.pageX + 10) + "px")
-             .style("top", (event.pageY - 28) + "px");
-        })
-        .on("mouseout", () => {
-        tooltip.style("opacity", 0);
-        })
-        .on("click", (_, d) => {
-        if (d.url) window.open(d.url, "_blank");
-        });
+    function render() {
 
-    // g.selectAll()
-    //   .data(track.dates)
-    //   .enter()
-    //   .append("text")
-    //   .attr("class", "milestone-label")
-    //   .attr(isHorizontal ? "x" : "y", d => pos.axis(d))
-    //   .attr(isHorizontal ? "y" : "x", pos.fixed + spacing / 2)
-    //   .text(d => d.name);
-  });
-  // Remove any previous legend
-  svg.selectAll(".legend-group").remove();
+      svg.selectAll('*').remove();
+      
+      const isHorizontal = window.innerWidth >= 700;
 
-  const legendData = Object.entries(typeIcons);
+      const margin = { top: 40, right: 50, bottom: 40, left: 50 };
+      const width = svg.node().clientWidth - margin.left - margin.right;
+      const height = svg.node().clientHeight - margin.top - margin.bottom;
 
-  const legendGroup = svg.append("g")
-    .attr("class", "legend-group");
+      const g = svg.append('g').attr('transform', `translate(${margin.left},${margin.top})`);
+      const spacing = isHorizontal ? 50 : 60;
+      let xScale, yScale;
 
-  // Legend layout
-  const legendPadding = 5;
-  const legendHeight = 30;
-  const legendY = svg.node().clientHeight - legendHeight - legendPadding;
-  const legendX = margin.left;
-  const legendWidth = svg.node().clientWidth - margin.left - margin.right;
-  const itemCount = legendData.length;
-  const itemSpacing = legendWidth / itemCount;
+      if (isHorizontal) {
+      
+        xScale = d3.scaleTime().domain(d3.extent(allDates)).range([margin.left, width]);
+      
+        // Uniform vertical spacing for lanes
+        const laneCount = trackNames.length;
+        const laneSpacing = (height - 32) / (laneCount - 1);
+      
+        yScale = d3.scalePoint().domain(trackNames).range([16, height - 16]).padding(0);
 
-  
-  // Center items vertically in the rectangle
-  const iconY = legendY + legendHeight / 2 - 2;
-  const labelY = iconY + 16;
+        // Track lines
+        g.selectAll('.track-line')
+          .data(data)
+          .enter()
+          .append('line')
+          .attr('class', 'track-line')
+          .attr('x1', d => {
+            const startDateObj = d.dates.find(date => date.type === 'start');
+            return startDateObj ? xScale(startDateObj.parsed) : 0;
+          })
+          .attr('x2', d => {
+            const endDateObj = d.dates.find(date => date.type === 'end');
+            return endDateObj ? xScale(endDateObj.parsed) : xScale(d.dates[d.dates.length - 1].parsed);
+          })
+          .attr('y1', d => yScale(d.track))
+          .attr('y2', d => yScale(d.track))
+          .attr('stroke', d => d.color);
 
-  // Legend items
-  legendData.forEach((d, i) => {
-    const itemX = legendX + itemSpacing * i + itemSpacing / 2;
+        // Track labels (left of each line)
+        g.selectAll('.track-label')
+          .data(data)
+          .enter()
+          .append('text')
+          .attr('class', 'track-label')
+          .attr('x', 15)
+          .attr('y', d => yScale(d.track))
+          .attr('dy', '0.35em')
+          .attr('text-anchor', 'end')
+          .attr('font-weight', 'bold')
+          .attr('fill', d => d.color)
+          .text(d => d.label || d.track)
+          .on('mouseover', function (event, d) {
+            tooltip
+              .style('opacity', 1)
+              .html(`<strong>${d.track}</strong>`);
+          })
+          .on('mousemove', event => {
+            tooltip
+              .style('left', (event.pageX + 10) + 'px')
+              .style('top', (event.pageY - 28) + 'px');
+          })
+          .on('mouseout', () => {
+            tooltip.style('opacity', 0);
+          });
 
-    // Icon
-    legendGroup.append("text")
-      .attr("x", itemX)
-      .attr("y", iconY)
-      .attr("font-size", 14)
-      .attr("text-anchor", "middle")
-      .text(d[1]);
+      } else {
+        // Uniform horizontal spacing for lanes
+        const laneCount = trackNames.length;
+        const laneSpacing = (width - 32) / (laneCount - 1);
+        xScale = d3.scalePoint().domain(trackNames).range([16, width - 16]).padding(0);
 
-    // Label (directly under icon)
-    legendGroup.append("text")
-      .attr("x", itemX)
-      .attr("y", labelY)
-      .attr("font-size", 10)
-      .attr("text-anchor", "middle")
-      .text(d[0].charAt(0).toUpperCase() + d[0].slice(1));
-  });
+        yScale = d3.scaleTime().domain(d3.extent(allDates)).range([0, height]);
 
-  // set today to the future for testing purposes
-  const today = new Date("2025-01-01"); // Uncomment to test
-  // Today line
-  if (today >= allDates[0] && today <= allDates[allDates.length - 1]) {
-    const linePos = isHorizontal ? xScale(today) : yScale(today);
-    g.append("line")
-      .attr("class", "today-line")
-      .attr(isHorizontal ? "x1" : "y1", linePos)
-      .attr(isHorizontal ? "x2" : "y2", linePos)
-      .attr(isHorizontal ? "y1" : "x1", 0)
-      .attr(isHorizontal ? "y2" : "x2", isHorizontal ? height : width)
-      .lower();
-  }
-}
+        g.selectAll('.track-line')
+          .data(data)
+          .enter()
+          .append('line')
+          .attr('class', 'track-line')
+          .attr('y1', d => {
+            const startDateObj = d.dates.find(date => date.type === 'start');
+            return startDateObj ? yScale(startDateObj.parsed) : 0;
+          })
+          .attr('y2', d => {
+            const endDateObj = d.dates.find(date => date.type === 'end');
+            return endDateObj ? yScale(endDateObj.parsed) : yScale(d.dates[d.dates.length - 1].parsed);
+          })
+          .attr('x1', d => xScale(d.track))
+          .attr('x2', d => xScale(d.track))
+          .attr('stroke', d => d.color);
 
-render();
-window.addEventListener("resize", render);
-</script>
+        // Track labels (top of each line)
+        g.selectAll('.track-label')
+          .data(data)
+          .enter()
+          .append('text')
+          .attr('class', 'track-label')
+          .attr('x', d => xScale(d.track))
+          .attr('y', -15)
+          .attr('text-anchor', 'middle')
+          .attr('font-weight', 'bold')
+          .attr('fill', d => d.color)
+          .text(d => d.label || d.track)
+          .on('mouseover', function (event, d) {
+            tooltip
+              .style('opacity', 1)
+              .html(`<strong>${d.track}</strong>`);
+          })
+          .on('mousemove', event => {
+            tooltip
+              .style('left', (event.pageX + 10) + 'px')
+              .style('top', (event.pageY - 28) + 'px');
+          })
+          .on('mouseout', () => {
+            tooltip.style('opacity', 0);
+          });
+
+      }
+
+      // Draw milestones
+      data.forEach(track => {
+
+        const pos = isHorizontal
+          ? { fixed: yScale(track.track), axis: d => xScale(d.parsed) }
+          : { fixed: xScale(track.track), axis: d => yScale(d.parsed) };
+        // Draw milestone circles with icons inside
+        g.selectAll()
+          .data(track.dates)
+          .enter()
+          .append('g')
+          .attr('transform', d => {
+            const x = isHorizontal ? pos.axis(d) : pos.fixed;
+            const y = isHorizontal ? pos.fixed : pos.axis(d);
+            return `translate(${x},${y})`;
+          })
+          .each(function (d) {
+            // Draw circle
+            d3.select(this)
+              .append('circle')
+              .attr('r', 16)
+              .attr('fill', '#fff')
+              .attr('stroke', track.color)
+              .attr('stroke-width', 2);
+
+            // Draw icon
+            d3.select(this)
+              .append('text')
+              .attr('class', 'milestone-icon')
+              .attr('dy', '0.35em')
+              .text(typeIcons[d.type]);
+          })
+          .on('mouseover', function (event, d) {
+            tooltip
+              .style('opacity', 1)
+              .html(`<strong>${d.name}</strong><br>${d.date}<br>${d.type}`);
+          })
+          .on('mousemove', event => {
+            tooltip
+              .style('left', (event.pageX + 10) + 'px')
+              .style('top', (event.pageY - 28) + 'px');
+          })
+          .on('mouseout', () => {
+            tooltip.style('opacity', 0);
+          })
+          .on('click', (_, d) => {
+            if (d.url) window.open(d.url, '_blank');
+          });
+
+        // g.selectAll()
+        //   .data(track.dates)
+        //   .enter()
+        //   .append('text')
+        //   .attr('class', 'milestone-label')
+        //   .attr(isHorizontal ? 'x' : 'y', d => pos.axis(d))
+        //   .attr(isHorizontal ? 'y' : 'x', pos.fixed + spacing / 2)
+        //   .text(d => d.name);
+      });
+      // Remove any previous legend
+      svg.selectAll('.legend-group').remove();
+
+      const legendData = Object.entries(typeIcons);
+
+      const legendGroup = svg.append('g')
+        .attr('class', 'legend-group');
+
+      // Legend layout
+      const legendPadding = 5;
+      const legendHeight = 30;
+      const legendY = svg.node().clientHeight - legendHeight - legendPadding;
+      const legendX = margin.left;
+      const legendWidth = svg.node().clientWidth - margin.left - margin.right;
+      const itemCount = legendData.length;
+      const itemSpacing = legendWidth / itemCount;
+
+
+      // Center items vertically in the rectangle
+      const iconY = legendY + legendHeight / 2 - 2;
+      const labelY = iconY + 16;
+
+      // Legend items
+      legendData.forEach((d, i) => {
+        const itemX = legendX + itemSpacing * i + itemSpacing / 2;
+
+        // Icon
+        legendGroup.append('text')
+          .attr('x', itemX)
+          .attr('y', iconY)
+          .attr('font-size', 14)
+          .attr('text-anchor', 'middle')
+          .text(d[1]);
+
+        // Label (directly under icon)
+        legendGroup.append('text')
+          .attr('x', itemX)
+          .attr('y', labelY)
+          .attr('font-size', 10)
+          .attr('text-anchor', 'middle')
+          .text(d[0].charAt(0).toUpperCase() + d[0].slice(1));
+      });
+
+      // set today to the future for testing purposes
+      const today = new Date('2025-01-01'); // Uncomment to test
+      // Today line
+      if (today >= allDates[0] && today <= allDates[allDates.length - 1]) {
+        const linePos = isHorizontal ? xScale(today) : yScale(today);
+        g.append('line')
+          .attr('class', 'today-line')
+          .attr(isHorizontal ? 'x1' : 'y1', linePos)
+          .attr(isHorizontal ? 'x2' : 'y2', linePos)
+          .attr(isHorizontal ? 'y1' : 'x1', 0)
+          .attr(isHorizontal ? 'y2' : 'x2', isHorizontal ? height : width)
+          .lower();
+      }
+    }
+
+    render();
+    window.addEventListener('resize', render);
+  </script>
 </body>
+
 </html>

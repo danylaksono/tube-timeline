@@ -300,8 +300,8 @@
 
       // Draw background ticks for months
       const months = d3.timeMonths(
-        d3.timeMonth.floor(allDates[0]),
-        d3.timeMonth.ceil(allDates[allDates.length - 1])
+        d3.timeMonth.ceil(allDates[0]),
+        d3.timeMonth.offset(d3.timeMonth.ceil(allDates[allDates.length - 1]), 1)
       );
 
       if (isHorizontal) {

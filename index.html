@@ -39,24 +39,11 @@
       stroke-width: 3;
       stroke-dasharray: 4;
     }
-
-    .tooltip {
-      position: absolute;
-      background: #333;
-      color: #fff;
-      padding: 6px 10px;
-      border-radius: 4px;
-      font-size: 12px;
-      pointer-events: none;
-      opacity: 0;
-      transition: opacity 0.2s;
-    }
   </style>
 </head>
 
 <body>
   <svg></svg>
-  <div class='tooltip' id='tooltip'></div>
 
   <script>const data = [
       {
@@ -163,11 +150,9 @@
     const tooltip = d3.select('#tooltip');
 
     function render() {
-
       svg.selectAll('*').remove();
-      
-      const isHorizontal = window.innerWidth >= 700;
 
+      const isHorizontal = window.innerWidth >= window.innerHeight;
       const margin = { top: 40, right: 50, bottom: 40, left: 50 };
       const width = svg.node().clientWidth - margin.left - margin.right;
       const height = svg.node().clientHeight - margin.top - margin.bottom;
@@ -177,16 +162,10 @@
       let xScale, yScale;
 
       if (isHorizontal) {
-      
         xScale = d3.scaleTime().domain(d3.extent(allDates)).range([margin.left, width]);
-      
-        // Uniform vertical spacing for lanes
         const laneCount = trackNames.length;
-        const laneSpacing = (height - 32) / (laneCount - 1);
-      
         yScale = d3.scalePoint().domain(trackNames).range([16, height - 16]).padding(0);
 
-        // Track lines
         g.selectAll('.track-line')
           .data(data)
           .enter()
@@ -204,7 +183,6 @@
           .attr('y2', d => yScale(d.track))
           .attr('stroke', d => d.color);
 
-        // Track labels (left of each line)
         g.selectAll('.track-label')
           .data(data)
           .enter()
@@ -218,25 +196,18 @@
           .attr('fill', d => d.color)
           .text(d => d.label || d.track)
           .on('mouseover', function (event, d) {
-            tooltip
-              .style('opacity', 1)
-              .html(`<strong>${d.track}</strong>`);
+            showSvgTooltip(g, isHorizontal ? 0 : 15, yScale(d.track), `<strong>${d.track}</strong>`, isHorizontal);
           })
-          .on('mousemove', event => {
-            tooltip
-              .style('left', (event.pageX + 10) + 'px')
-              .style('top', (event.pageY - 28) + 'px');
+          .on('mousemove', function (event, d) {
+            showSvgTooltip(g, isHorizontal ? 0 : 15, yScale(d.track), `<strong>${d.track}</strong>`, isHorizontal);
           })
           .on('mouseout', () => {
-            tooltip.style('opacity', 0);
+            removeSvgTooltip(g);
           });
 
       } else {
-        // Uniform horizontal spacing for lanes
         const laneCount = trackNames.length;
-        const laneSpacing = (width - 32) / (laneCount - 1);
         xScale = d3.scalePoint().domain(trackNames).range([16, width - 16]).padding(0);
-
         yScale = d3.scaleTime().domain(d3.extent(allDates)).range([0, height]);
 
         g.selectAll('.track-line')
@@ -256,7 +227,6 @@
           .attr('x2', d => xScale(d.track))
           .attr('stroke', d => d.color);
 
-        // Track labels (top of each line)
         g.selectAll('.track-label')
           .data(data)
           .enter()
@@ -269,28 +239,22 @@
           .attr('fill', d => d.color)
           .text(d => d.label || d.track)
           .on('mouseover', function (event, d) {
-            tooltip
-              .style('opacity', 1)
-              .html(`<strong>${d.track}</strong>`);
+            showSvgTooltip(g, xScale(d.track), -15, `<strong>${d.track}</strong>`, false, true);
           })
-          .on('mousemove', event => {
-            tooltip
-              .style('left', (event.pageX + 10) + 'px')
-              .style('top', (event.pageY - 28) + 'px');
+          .on('mousemove', function (event, d) {
+            showSvgTooltip(g, xScale(d.track), -15, `<strong>${d.track}</strong>`, false, true);
           })
           .on('mouseout', () => {
-            tooltip.style('opacity', 0);
+            removeSvgTooltip(g);
           });
-
       }
 
       // Draw milestones
       data.forEach(track => {
-
         const pos = isHorizontal
           ? { fixed: yScale(track.track), axis: d => xScale(d.parsed) }
           : { fixed: xScale(track.track), axis: d => yScale(d.parsed) };
-        // Draw milestone circles with icons inside
+
         g.selectAll()
           .data(track.dates)
           .enter()
@@ -301,7 +265,6 @@
             return `translate(${x},${y})`;
           })
           .each(function (d) {
-            // Draw circle
             d3.select(this)
               .append('circle')
               .attr('r', 16)
@@ -309,7 +272,6 @@
               .attr('stroke', track.color)
               .attr('stroke-width', 2);
 
-            // Draw icon
             d3.select(this)
               .append('text')
               .attr('class', 'milestone-icon')
@@ -317,30 +279,23 @@
               .text(typeIcons[d.type]);
           })
           .on('mouseover', function (event, d) {
-            tooltip
-              .style('opacity', 1)
-              .html(`<strong>${d.name}</strong><br>${d.date}`);
+            const coords = d3.select(this).attr('transform').match(/translate\(([^,]+),([^)]+)\)/);
+            const x = +coords[1];
+            const y = +coords[2];
+            showSvgTooltip(g, x, y, `<strong>${d.name}</strong><br>${d.date}`, isHorizontal);
           })
-          .on('mousemove', event => {
-            tooltip
-              .style('left', (event.pageX + 10) + 'px')
-              .style('top', (event.pageY - 28) + 'px');
+          .on('mousemove', function (event, d) {
+            const coords = d3.select(this).attr('transform').match(/translate\(([^,]+),([^)]+)\)/);
+            const x = +coords[1];
+            const y = +coords[2];
+            showSvgTooltip(g, x, y, `<strong>${d.name}</strong><br>${d.date}`, isHorizontal);
           })
           .on('mouseout', () => {
-            tooltip.style('opacity', 0);
+            removeSvgTooltip(g);
           })
           .on('click', (_, d) => {
             if (d.url) window.open(d.url, '_blank');
           });
-
-        // g.selectAll()
-        //   .data(track.dates)
-        //   .enter()
-        //   .append('text')
-        //   .attr('class', 'milestone-label')
-        //   .attr(isHorizontal ? 'x' : 'y', d => pos.axis(d))
-        //   .attr(isHorizontal ? 'y' : 'x', pos.fixed + spacing / 2)
-        //   .text(d => d.name);
       });
 
       // Draw background ticks for months
@@ -350,7 +305,6 @@
       );
 
       if (isHorizontal) {
-        // Vertical lines for each month
         g.selectAll('.month-tick')
           .data(months)
           .enter()
@@ -363,7 +317,6 @@
           .attr('stroke', '#ddd')
           .attr('stroke-width', 1);
 
-        // Month labels
         g.selectAll('.month-label')
           .data(months)
           .enter()
@@ -376,7 +329,6 @@
           .attr('fill', '#bbb')
           .text(d => d3.timeFormat('%b')(d));
       } else {
-        // Horizontal lines for each month
         g.selectAll('.month-tick')
           .data(months)
           .enter()
@@ -389,7 +341,6 @@
           .attr('stroke', '#ddd')
           .attr('stroke-width', 1);
 
-        // Month labels
         g.selectAll('.month-label')
           .data(months)
           .enter()
@@ -403,16 +354,11 @@
           .text(d => d3.timeFormat('%b')(d));
       }
 
-
-      // Remove any previous legend
       svg.selectAll('.legend-group').remove();
 
       const legendData = Object.entries(typeIcons);
-
       const legendGroup = svg.append('g')
         .attr('class', 'legend-group');
-
-      // Legend layout
       const legendPadding = 5;
       const legendHeight = 30;
       const legendY = svg.node().clientHeight - legendHeight - legendPadding;
@@ -420,25 +366,17 @@
       const legendWidth = svg.node().clientWidth - margin.left - margin.right;
       const itemCount = legendData.length;
       const itemSpacing = legendWidth / itemCount;
-
-
-      // Center items vertically in the rectangle
       const iconY = legendY + legendHeight / 2 - 2;
       const labelY = iconY + 16;
 
-      // Legend items
       legendData.forEach((d, i) => {
         const itemX = legendX + itemSpacing * i + itemSpacing / 2;
-
-        // Icon
         legendGroup.append('text')
           .attr('x', itemX)
           .attr('y', iconY)
           .attr('font-size', 14)
           .attr('text-anchor', 'middle')
           .text(d[1]);
-
-        // Label (directly under icon)
         legendGroup.append('text')
           .attr('x', itemX)
           .attr('y', labelY)
@@ -449,7 +387,6 @@
 
       // set today to the future for testing purposes
       const today = new Date('2025-01-01'); // Uncomment to test
-      // Today line
       if (today >= allDates[0] && today <= allDates[allDates.length - 1]) {
         const linePos = isHorizontal ? xScale(today) : yScale(today);
         g.append('line')
@@ -460,10 +397,72 @@
           .attr(isHorizontal ? 'y2' : 'x2', isHorizontal ? height : width);
       }
 
-
       g.selectAll('.track-line').raise();
       g.selectAll('.track-label').raise();
       g.selectAll('g').raise();
+    }
+    // SVG tooltip helpers
+    function showSvgTooltip(g, x, y, html, isHorizontal, isLabel = false) {
+      removeSvgTooltip(g);
+
+      // Estimate width/height from text
+      const text = html.replace(/<br>/g, ' ').replace(/<[^>]+>/g, '');
+      const fontSize = 13;
+      const padding = 10;
+      const lineHeight = 18;
+      const lines = html.split('<br>');
+      const width = Math.max(80, text.length * fontSize * 0.5);
+      const height = lines.length * lineHeight + padding * 2;
+
+      // Position tooltip above or below the element
+      let tooltipX = x;
+      let tooltipY = y;
+
+      if (isHorizontal) {
+      tooltipY -= height + 18;
+      if (tooltipY < 0) {
+        tooltipY = y + 24;
+      }
+      } else {
+      tooltipX += 24;
+      tooltipY -= height / 2;
+      if (tooltipX + width > g.node().ownerSVGElement.clientWidth) {
+        tooltipX = x - width - 24;
+      }
+      if (isLabel) {
+        tooltipY += 20;
+      }
+      }
+
+      const tooltipGroup = g.append('g')
+      .attr('class', 'svg-tooltip')
+      .attr('pointer-events', 'none');
+
+      tooltipGroup.append('rect')
+      .attr('x', tooltipX - width / 2)
+      .attr('y', tooltipY)
+      .attr('width', width)
+      .attr('height', height)
+      .attr('rx', 8)
+      .attr('fill', '#333')
+      .attr('stroke', '#222')
+      .attr('opacity', 0.95);
+
+      // Text
+      lines.forEach((line, i) => {
+      tooltipGroup.append('text')
+        .attr('x', tooltipX)
+        .attr('y', tooltipY + padding + (i + 1) * lineHeight - 6)
+        .attr('text-anchor', 'middle')
+        .attr('font-size', fontSize)
+        .attr('fill', '#fff')
+        .attr('font-family', 'sans-serif')
+        .html(line.replace(/<[^>]+>/g, ''));
+      });
+    }
+
+    function removeSvgTooltip(g) {
+      g.selectAll('.svg-tooltip').remove();
     }
 
     render();

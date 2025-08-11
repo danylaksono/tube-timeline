@@ -136,8 +136,15 @@
     };
 
     const parseDate = str => {
-      if (/^\d{2}\/\d{2}\/\d{2}$/.test(str)) return d3.timeParse('%d/%m/%y')(str);
-      if (/^\d{2}\/\d{4}$/.test(str)) return d3.timeParse('%m/%Y')(str);
+      // Match DD/MM/YYYY or MM/YYYY
+      const fullMatch = /^(\d{2})\/(\d{2})\/(\d{4})$/.exec(str);
+      if (fullMatch) {
+        return new Date(+fullMatch[3], +fullMatch[2] - 1, +fullMatch[1]);
+      }
+      const monthYearMatch = /^(\d{2})\/(\d{4})$/.exec(str);
+      if (monthYearMatch) {
+        return new Date(+monthYearMatch[2], +monthYearMatch[1] - 1, 1);
+      }
       return null;
     };
 

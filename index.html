@@ -14,24 +14,7 @@
     svg {
       width: 100%;
       height: 100vh;
-      background: #f9f9f9;
-    }
-
-    .milestone-icon {
-      font-size: 16px;
-      cursor: pointer;
-      text-anchor: middle;
-      alignment-baseline: middle;
-    }
-
-    .milestone-label {
-      font-size: 12px;
-      text-anchor: middle;
-    }
-
-    .track-line {
-      stroke-width: 20;
-      opacity: 1;
+      background: #ffffff;
     }
 
     .today-line {
@@ -49,7 +32,7 @@
       {
         track: 'Full Papers',
         label: 'FP',
-        color: '#1F77B4', // Bright blue
+        color: '#E32017', // Bright red
         dates: [
           { date: '27/11/2025', name: 'Abstract deadline', type: 'start', url: 'https://eurovis.org.uk/full-papers/', label: 'Abstract' },
           { date: '04/12/2025', name: 'Full paper deadline', type: 'submission', url: 'https://eurovis.org.uk/full-papers/', label: 'Submission' },
@@ -62,7 +45,7 @@
       {
         track: 'Short Papers',
         label: 'SP',
-        color: '#E377C2', // Vivid red
+        color: '#B36305', // Orange-ish
         dates: [
           { date: '19/02/2026', name: 'Submission deadline', type: 'start', url: 'https://eurovis.org.uk/short-papers/', label: 'Submission' },
           { date: '02/04/2026', name: 'Acceptance notification', type: 'notification', url: 'https://eurovis.org.uk/short-papers/', label: 'Notification' },
@@ -72,7 +55,7 @@
       {
         track: 'State of the Art Reports',
         label: 'STAR',
-        color: '#FFDD44', // Bright green
+        color: '#FFD300', // Bright yellow
         dates: [
           { date: '13/10/2025', name: 'STAR Sketch Submission', type: 'start', url: 'https://eurovis.org.uk/state-of-the-art-reports-stars/', label: 'Sketch' },
           { date: '05/11/2025', name: 'Invitation for Full STAR', type: 'notification', url: 'https://eurovis.org.uk/state-of-the-art-reports-stars/', label: 'Invitation' },
@@ -86,7 +69,7 @@
       {
         track: 'Panels & Tutorials',
         label: 'P&T',
-        color: '#2CA02C', // Punchy yellow
+        color: '#003688', // Dark blue
         dates: [
           { date: '26/02/2026', name: 'Submission deadline', type: 'start', url: 'https://eurovis.org.uk/panels-and-tutorials/', label: 'Submission' },
           { date: '05/03/2026', name: 'Conditional Notification', type: 'notification', url: 'https://eurovis.org.uk/panels-and-tutorials/', label: 'Notification' },
@@ -96,7 +79,7 @@
       {
         track: 'Workshops',
         label: 'WS',
-        color: '#9467BD', // Vivid purple
+        color: '#00782A', // Vivid green
         dates: [
           { date: '29/09/2025', name: 'Proposal Submission', type: 'start', url: 'https://eurovis.org.uk/workshops/', label: 'Submission' },
           { date: '15/10/2025', name: 'Notification', type: 'end', url: 'https://eurovis.org.uk/workshops/', label: 'Notification' }
@@ -105,7 +88,7 @@
       {
         track: 'Education Papers',
         label: 'ED',
-        color: '#17BECF', // Bright orange
+        color: '#9B0056', // Dark magenta
         dates: [
           { date: '08/01/2026', name: 'Submission', type: 'start', url: 'https://eurovis.org.uk/education-papers/', label: 'Submission' },
           { date: '04/04/2026', name: 'Notification', type: 'notification', url: 'https://eurovis.org.uk/education-papers/', label: 'Notification' },
@@ -115,7 +98,7 @@
       {
         track: 'Posters & Demos',
         label: 'P&D',
-        color: '#FF7F0E', // Bright cyan
+        color: '#0098D4', // Light blue
         dates: [
           { date: '06/04/2026', name: 'Submission', type: 'start', url: 'https://eurovis.org.uk/posters/', label: 'Submission' },
           { date: '24/04/2026', name: 'Notification', type: 'notification', url: 'https://eurovis.org.uk/posters/', label: 'Notification' },
@@ -156,7 +139,7 @@
       return (aStart || new Date(9999, 0, 1)) - (bStart || new Date(9999, 0, 1));
     });
 
-    
+
     const allDates = [...new Set(data.flatMap(t => t.dates.map(d => d.parsed)))].sort((a, b) => a - b);
     const trackNames = data.map(d => d.track);
     const svg = d3.select('svg');
@@ -214,10 +197,13 @@
         if (textWidth > maxTextWidths[col]) maxTextWidths[col] = textWidth;
         tempText.remove();
       });
-      const colWidth = Math.max(...maxTextWidths) + 14;
-      const legendRectWidth = legendCols * colWidth + 14;
-      const legendHeight = legendRows * legendSpacing + 14;
-      const legendPadding = 12;
+
+      // Adjust legend size for vertical layout
+      const isVertical = window.innerWidth < window.innerHeight;
+      const colWidth = Math.max(...maxTextWidths) + (isVertical ? 5 : 14);
+      const legendRectWidth = legendCols * colWidth + (isVertical ? 8 : 14);
+      const legendHeight = legendRows * (isVertical ? 22 : legendSpacing) + (isVertical ? 8 : 14);
+      const legendPadding = isVertical ? 8 : 12;
 
       // Align legend to right edge with padding
       const legendX = svg.node().clientWidth - legendRectWidth - legendPadding;
@@ -227,17 +213,16 @@
         .attr('class', 'subway-legend')
         .attr('transform', `translate(${legendX},${legendY})`);
 
-
       // Draw rect first
       legendGroup.append('rect')
         .attr('x', -legendPadding)
         .attr('y', -legendPadding)
         .attr('width', legendRectWidth)
         .attr('height', legendHeight)
-        .attr('rx', 18)
+        .attr('rx', 8)
         .attr('fill', '#fff')
         .attr('stroke', '#000')
-        .attr('stroke-width', 4)
+        .attr('stroke-width', 3)
         .attr('opacity', 1);
 
       // Draw legend items in columns
@@ -245,7 +230,7 @@
         const col = i % legendCols;
         const row = Math.floor(i / legendCols);
         const xBase = col * colWidth;
-        const yBase = row * legendSpacing + 8;
+        const yBase = row * (isVertical ? 22 : legendSpacing) + (isVertical ? 4 : 8);
 
         legendGroup.append('line')
           .attr('x1', xBase)
@@ -255,6 +240,7 @@
           .attr('stroke', track.color)
           .attr('stroke-width', 8)
           .attr('stroke-linecap', 'round');
+
         legendGroup.append('text')
           .attr('x', xBase + 25)
           .attr('y', yBase + 6)
@@ -269,24 +255,31 @@
       svg.selectAll('*').remove();
 
       renderHeader();
-
-      const isHorizontal = window.innerWidth >= window.innerHeight;
-      const margin = { top: 40, right: 50, bottom: 40, left: 50 };
-      const width = svg.node().clientWidth - margin.left - margin.right;
-      const height = svg.node().clientHeight - margin.top - margin.bottom;
-
       // Push the main group down to leave space for the header
-      const headerHeight = 100;
-      const g = svg.append('g').attr('transform', `translate(${margin.left},${margin.top + headerHeight})`);
-      // Reduce spacing between lanes
-      let xScale, yScale;
+      
+      const isHorizontal = window.innerWidth >= window.innerHeight;
+      const headerHeight = isHorizontal ? 130 : 90;
+      const margin = { top: 40, right: 50, bottom: 40, left: 35 };
+      const height = svg.node().clientHeight - margin.top - margin.bottom - headerHeight;
+      const laneHeight = 15;
+      
+      
+      
+      const g = svg.append('g').attr('transform', `translate(${isHorizontal ? margin.left/2 : margin.left},${margin.top + headerHeight})`);
+      const width = svg.node().clientWidth - (isHorizontal ? 0 : margin.left) - (isHorizontal ? margin.right : 2* margin.right);
+
+      let xScale, yScale;    
+
+      const trackLinesGroup = g.append('g')
+        .attr('class', 'track-lines-group')
+        .attr('transform', isHorizontal ?  'translate(0, 50)' : 'translate(0, 0)');
 
       if (isHorizontal) {
         xScale = d3.scaleTime().domain(d3.extent(allDates)).range([margin.left, width]);
         const laneCount = trackNames.length;
-        yScale = d3.scalePoint().domain(trackNames).range([16, height - 16]).padding(0);
+        yScale = d3.scalePoint().domain(trackNames).range([10, height - 50]).padding(0);
 
-        g.selectAll('.track-line')
+        trackLinesGroup.selectAll('.track-line')
           .data(data)
           .enter()
           .append('line')
@@ -301,36 +294,15 @@
           })
           .attr('y1', d => yScale(d.track))
           .attr('y2', d => yScale(d.track))
-          .attr('stroke', d => d.color);
-
-        g.selectAll('.track-label')
-          .data(data)
-          .enter()
-          .append('text')
-          .attr('class', 'track-label')
-          .attr('x', 15)
-          .attr('y', d => yScale(d.track))
-          .attr('dy', '0.35em')
-          .attr('text-anchor', 'end')
-          .attr('font-weight', 'bold')
-          .attr('fill', d => d.color)
-          .text(d => d.label || d.track)
-          .on('mouseover', function (event, d) {
-            showSvgTooltip(g, isHorizontal ? 0 : 15, yScale(d.track), `<strong>${d.track}</strong>`, isHorizontal);
-          })
-          .on('mousemove', function (event, d) {
-            showSvgTooltip(g, isHorizontal ? 0 : 15, yScale(d.track), `<strong>${d.track}</strong>`, isHorizontal);
-          })
-          .on('mouseout', () => {
-            removeSvgTooltip(g);
-          });
-
+          .attr('stroke', d => d.color)
+          .attr('stroke-width', laneHeight)
+          .attr('stroke-linecap', 'round');
       } else {
         const laneCount = trackNames.length;
         xScale = d3.scalePoint().domain(trackNames).range([16, width - 16]).padding(0);
         yScale = d3.scaleTime().domain(d3.extent(allDates)).range([0, height]);
 
-        g.selectAll('.track-line')
+        trackLinesGroup.selectAll('.track-line')
           .data(data)
           .enter()
           .append('line')
@@ -345,28 +317,9 @@
           })
           .attr('x1', d => xScale(d.track))
           .attr('x2', d => xScale(d.track))
-          .attr('stroke', d => d.color);
-
-        g.selectAll('.track-label')
-          .data(data)
-          .enter()
-          .append('text')
-          .attr('class', 'track-label')
-          .attr('x', d => xScale(d.track))
-          .attr('y', -15)
-          .attr('text-anchor', 'middle')
-          .attr('font-weight', 'bold')
-          .attr('fill', d => d.color)
-          .text(d => d.label || d.track)
-          .on('mouseover', function (event, d) {
-            showSvgTooltip(g, xScale(d.track), -15, `<strong>${d.track}</strong>`, false, true);
-          })
-          .on('mousemove', function (event, d) {
-            showSvgTooltip(g, xScale(d.track), -15, `<strong>${d.track}</strong>`, false, true);
-          })
-          .on('mouseout', () => {
-            removeSvgTooltip(g);
-          });
+          .attr('stroke', d => d.color)
+          .attr('stroke-width', laneHeight)
+          .attr('stroke-linecap', 'round');
       }
 
       // Draw milestones
@@ -374,38 +327,86 @@
         const pos = isHorizontal
           ? { fixed: yScale(track.track), axis: d => xScale(d.parsed) }
           : { fixed: xScale(track.track), axis: d => yScale(d.parsed) };
-
-        g.selectAll()
+        trackLinesGroup.selectAll()
           .data(track.dates)
           .enter()
           .append('g')
-          .attr('transform', d => {
+            .attr('transform', d => {
             const x = isHorizontal ? pos.axis(d) : pos.fixed;
             const y = isHorizontal ? pos.fixed : pos.axis(d);
             return `translate(${x},${y})`;
-          })
-          .each(function (d) {
-            // Background circle (thicker black stroke)
-            d3.select(this)
-              .append('circle')
-              .attr('r', 20)
+            })
+            .each(function (d) {
+            if (d.type === 'start' || d.type === 'end') {
+              // Rounded rectangle for start/end, centered on the lane
+              d3.select(this)
+              .append('rect')
+              .attr('x', isHorizontal ? -laneHeight : -laneHeight)
+              .attr('y', isHorizontal ? -laneHeight*1.5 : -laneHeight * 0.625)
+              .attr('width', isHorizontal ? laneHeight * 1.5 : laneHeight * 2)
+              .attr('height', isHorizontal ? laneHeight * 3 : laneHeight * 1.25)
               .attr('fill', '#fff')
               .attr('stroke', '#000')
-              .attr('stroke-width', 5);
+              .attr('stroke-width', 5)
+              .attr('rx', 8)
+              .attr('ry', 8);
+            
+            } else {
+                // Rectangle for other types, with rounded corners
+                d3.select(this)
+                .append('rect')
+                .attr('x', isHorizontal ? 0 : 0)
+                .attr('y', isHorizontal ? -laneHeight*2 : 0)
+                .attr('width', isHorizontal ? laneHeight : laneHeight * 1.5)
+                .attr('height', isHorizontal ? laneHeight * 2 : laneHeight)
+                .attr('fill', track.color)
+                .attr('stroke', 'none')
+                .attr('rx', 4) // Rounded cap
+                .attr('ry', 4);
+            }
 
-            d3.select(this)
-              .append('circle')
-              .attr('r', 16)
-              .attr('fill', '#fff');
-              // .attr('stroke', track.color)
-              // .attr('stroke-width', 2);
-
-            d3.select(this)
-              .append('text')
-              .attr('class', 'milestone-icon')
-              .attr('dy', '0.35em')
-              .text(typeIcons[d.type]);
-          })
+            // Label positioning and orientation
+            const labelLines = (d.label || '').split(' ');
+            if (isHorizontal) {
+              // Horizontal: above milestone, angled
+              const labelYOffset = -laneHeight * 2.75;
+              const labelXOffset = 0;
+              const rotation = -30;
+              labelLines.forEach((line, i) => {
+              d3.select(this)
+                .append('text')
+                .attr('class', 'milestone-label')
+                .attr('text-anchor', 'start')
+                .attr('font-size', 15)
+                .attr('font-weight', 'bold')
+                .attr('font-family', 'sans-serif')
+                .attr('fill', '#222')
+                .attr('x', labelXOffset)
+                .attr('y', labelYOffset + i * 16)
+                .attr('transform', `rotate(${rotation} ${labelXOffset} ${labelYOffset + i * 16})`)
+                .text(line);
+              });
+            } else {
+              // Vertical: right of milestone, rotated
+              const labelYOffset = 5;
+              const labelXOffset = laneHeight * 2.2;
+              const rotation = -30;
+              labelLines.forEach((line, i) => {
+              d3.select(this)
+                .append('text')
+                .attr('class', 'milestone-label')
+                .attr('text-anchor', 'start')
+                .attr('font-size', 15)
+                .attr('font-weight', 'bold')
+                .attr('font-family', 'sans-serif')
+                .attr('fill', '#222')
+                .attr('x', labelXOffset)
+                .attr('y', labelYOffset + i * 16)
+                .attr('transform', `rotate(${rotation} ${labelXOffset} ${labelYOffset + i * 16})`)
+                .text(line);
+              });
+            }
+            })
           .on('mouseover', function (event, d) {
             const coords = d3.select(this).attr('transform').match(/translate\(([^,]+),([^)]+)\)/);
             const x = +coords[1];
@@ -482,39 +483,8 @@
           .text(d => d3.timeFormat('%b')(d));
       }
 
-      svg.selectAll('.legend-group').remove();
-
-      const legendData = Object.entries(typeIcons);
-      const legendGroup = svg.append('g')
-        .attr('class', 'legend-group');
-      const legendPadding = 5;
-      const legendHeight = 30;
-      const legendY = svg.node().clientHeight - legendHeight - legendPadding;
-      const legendX = margin.left;
-      const legendWidth = svg.node().clientWidth - margin.left - margin.right;
-      const itemCount = legendData.length;
-      const itemSpacing = legendWidth / itemCount;
-      const iconY = legendY + legendHeight / 2 - 2;
-      const labelY = iconY + 16;
-
-      legendData.forEach((d, i) => {
-        const itemX = legendX + itemSpacing * i + itemSpacing / 2;
-        legendGroup.append('text')
-          .attr('x', itemX)
-          .attr('y', iconY)
-          .attr('font-size', 14)
-          .attr('text-anchor', 'middle')
-          .text(d[1]);
-        legendGroup.append('text')
-          .attr('x', itemX)
-          .attr('y', labelY)
-          .attr('font-size', 10)
-          .attr('text-anchor', 'middle')
-          .text(d[0].charAt(0).toUpperCase() + d[0].slice(1));
-      });
-
-      // set today to the future for testing purposes
-      const today = new Date('2025-01-01'); // Uncomment to test
+      // set today to today
+      const today = new Date();
       if (today >= allDates[0] && today <= allDates[allDates.length - 1]) {
         const linePos = isHorizontal ? xScale(today) : yScale(today);
         g.append('line')
@@ -530,6 +500,7 @@
       g.selectAll('.track-label').raise();
       g.selectAll('g').raise();
     }
+
     // SVG tooltip helpers
     function showSvgTooltip(g, x, y, html, isHorizontal, isLabel = false) {
       removeSvgTooltip(g);
@@ -548,45 +519,45 @@
       let tooltipY = y;
 
       if (isHorizontal) {
-      tooltipY -= height + 18;
-      if (tooltipY < 0) {
-        tooltipY = y + 24;
-      }
+        tooltipY -= height + 18;
+        if (tooltipY < 0) {
+          tooltipY = y + 24;
+        }
       } else {
-      tooltipX += 24;
-      tooltipY -= height / 2;
-      if (tooltipX + width > g.node().ownerSVGElement.clientWidth) {
-        tooltipX = x - width - 24;
-      }
-      if (isLabel) {
-        tooltipY += 20;
-      }
+        tooltipX += 24;
+        tooltipY -= height / 2;
+        if (tooltipX + width > g.node().ownerSVGElement.clientWidth) {
+          tooltipX = x - width - 24;
+        }
+        if (isLabel) {
+          tooltipY += 20;
+        }
       }
 
       const tooltipGroup = g.append('g')
-      .attr('class', 'svg-tooltip')
-      .attr('pointer-events', 'none');
+        .attr('class', 'svg-tooltip')
+        .attr('pointer-events', 'none');
 
       tooltipGroup.append('rect')
-      .attr('x', tooltipX - width / 2)
-      .attr('y', tooltipY)
-      .attr('width', width)
-      .attr('height', height)
-      .attr('rx', 8)
-      .attr('fill', '#333')
-      .attr('stroke', '#222')
-      .attr('opacity', 0.95);
+        .attr('x', tooltipX - width / 2)
+        .attr('y', tooltipY)
+        .attr('width', width)
+        .attr('height', height)
+        .attr('rx', 8)
+        .attr('fill', '#333')
+        .attr('stroke', '#222')
+        .attr('opacity', 0.95);
 
       // Text
       lines.forEach((line, i) => {
-      tooltipGroup.append('text')
-        .attr('x', tooltipX)
-        .attr('y', tooltipY + padding + (i + 1) * lineHeight - 6)
-        .attr('text-anchor', 'middle')
-        .attr('font-size', fontSize)
-        .attr('fill', '#fff')
-        .attr('font-family', 'sans-serif')
-        .html(line.replace(/<[^>]+>/g, ''));
+        tooltipGroup.append('text')
+          .attr('x', tooltipX)
+          .attr('y', tooltipY + padding + (i + 1) * lineHeight - 6)
+          .attr('text-anchor', 'middle')
+          .attr('font-size', fontSize)
+          .attr('fill', '#fff')
+          .attr('font-family', 'sans-serif')
+          .html(line.replace(/<[^>]+>/g, ''));
       });
     }
 

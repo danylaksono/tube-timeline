@@ -30,7 +30,7 @@
     }
 
     .track-line {
-      stroke-width: 32;
+      stroke-width: 20;
       opacity: 1;
     }
 
@@ -143,6 +143,12 @@
 
     const today = new Date();
     data.forEach(track => track.dates.forEach(d => d.parsed = parseDate(d.date)));
+    data.sort((a, b) => {
+      const aStart = a.dates.find(d => d.type === 'start')?.parsed;
+      const bStart = b.dates.find(d => d.type === 'start')?.parsed;
+      return (aStart || new Date(9999, 0, 1)) - (bStart || new Date(9999, 0, 1));
+    });
+
     
     const allDates = [...new Set(data.flatMap(t => t.dates.map(d => d.parsed)))].sort((a, b) => a - b);
     const trackNames = data.map(d => d.track);
@@ -265,12 +271,20 @@
             return `translate(${x},${y})`;
           })
           .each(function (d) {
+            // Background circle (thicker black stroke)
+            d3.select(this)
+              .append('circle')
+              .attr('r', 20)
+              .attr('fill', '#fff')
+              .attr('stroke', '#000')
+              .attr('stroke-width', 5);
+
             d3.select(this)
               .append('circle')
               .attr('r', 16)
-              .attr('fill', '#fff')
-              .attr('stroke', track.color)
-              .attr('stroke-width', 2);
+              .attr('fill', '#fff');
+              // .attr('stroke', track.color)
+              // .attr('stroke-width', 2);
 
             d3.select(this)
               .append('text')
@@ -397,6 +411,7 @@
           .attr(isHorizontal ? 'y2' : 'x2', isHorizontal ? height : width);
       }
 
+      g.selectAll('.today-line').lower();
       g.selectAll('.track-line').raise();
       g.selectAll('.track-label').raise();
       g.selectAll('g').raise();

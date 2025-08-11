@@ -162,16 +162,123 @@
     const svg = d3.select('svg');
     const tooltip = d3.select('#tooltip');
 
+    function renderHeader() {
+      d3.select('.header-group').remove();
+      const headerGroup = svg.append('g')
+        .attr('class', 'header-group');
+
+      // Logo image (top left)
+      headerGroup.append('image')
+        .attr('x', 10)
+        .attr('y', 10)
+        .attr('height', 80)
+        .attr('href', 'logo.png')
+        .attr('preserveAspectRatio', 'xMidYMid meet');
+
+      // Title and subtitle (left, vertically stacked)
+      headerGroup.append('text')
+        .attr('x', 90)
+        .attr('y', 50)
+        .attr('text-anchor', 'start')
+        .attr('font-size', 32)
+        .attr('font-weight', 'bold')
+        .attr('font-family', 'sans-serif')
+        .attr('fill', '#222')
+        .text('EuroVis 2026 Timeline');
+
+      headerGroup.append('text')
+        .attr('x', 90)
+        .attr('y', 68)
+        .attr('text-anchor', 'start')
+        .attr('font-size', 18)
+        .attr('font-family', 'sans-serif')
+        .attr('fill', '#666')
+        .text('Key Deadlines for All Tracks');
+
+      // Subway-style legend (right, 2 columns)
+      const legendSpacing = 28;
+      const legendCols = 2;
+      const legendRows = Math.ceil(data.length / legendCols);
+
+      // Measure max text width per column for legend sizing
+      let maxTextWidths = [0, 0];
+      data.forEach((track, i) => {
+        const col = i % legendCols;
+        const tempText = headerGroup.append('text')
+          .attr('x', 0)
+          .attr('y', -100)
+          .attr('font-size', 16)
+          .attr('font-family', 'sans-serif')
+          .text(track.track);
+        const textWidth = tempText.node().getBBox().width;
+        if (textWidth > maxTextWidths[col]) maxTextWidths[col] = textWidth;
+        tempText.remove();
+      });
+      const colWidth = Math.max(...maxTextWidths) + 14;
+      const legendRectWidth = legendCols * colWidth + 14;
+      const legendHeight = legendRows * legendSpacing + 14;
+      const legendPadding = 12;
+
+      // Align legend to right edge with padding
+      const legendX = svg.node().clientWidth - legendRectWidth - legendPadding;
+      const legendY = 30;
+
+      const legendGroup = headerGroup.append('g')
+        .attr('class', 'subway-legend')
+        .attr('transform', `translate(${legendX},${legendY})`);
+
+
+      // Draw rect first
+      legendGroup.append('rect')
+        .attr('x', -legendPadding)
+        .attr('y', -legendPadding)
+        .attr('width', legendRectWidth)
+        .attr('height', legendHeight)
+        .attr('rx', 18)
+        .attr('fill', '#fff')
+        .attr('stroke', '#000')
+        .attr('stroke-width', 4)
+        .attr('opacity', 1);
+
+      // Draw legend items in columns
+      data.forEach((track, i) => {
+        const col = i % legendCols;
+        const row = Math.floor(i / legendCols);
+        const xBase = col * colWidth;
+        const yBase = row * legendSpacing + 8;
+
+        legendGroup.append('line')
+          .attr('x1', xBase)
+          .attr('y1', yBase)
+          .attr('x2', xBase + 16)
+          .attr('y2', yBase)
+          .attr('stroke', track.color)
+          .attr('stroke-width', 8)
+          .attr('stroke-linecap', 'round');
+        legendGroup.append('text')
+          .attr('x', xBase + 25)
+          .attr('y', yBase + 6)
+          .attr('font-size', 14)
+          .attr('fill', '#222')
+          .attr('font-family', 'sans-serif')
+          .text(track.track);
+      });
+    }
+
     function render() {
       svg.selectAll('*').remove();
+
+      renderHeader();
 
       const isHorizontal = window.innerWidth >= window.innerHeight;
       const margin = { top: 40, right: 50, bottom: 40, left: 50 };
       const width = svg.node().clientWidth - margin.left - margin.right;
       const height = svg.node().clientHeight - margin.top - margin.bottom;
 
-      const g = svg.append('g').attr('transform', `translate(${margin.left},${margin.top})`);
-      const spacing = isHorizontal ? 50 : 60;
+      // Push the main group down to leave space for the header
+      const headerHeight = 100;
+      const g = svg.append('g').attr('transform', `translate(${margin.left},${margin.top + headerHeight})`);
+      // Reduce spacing between lanes
       let xScale, yScale;
 
       if (isHorizontal) {

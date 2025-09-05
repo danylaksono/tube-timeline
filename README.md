@@ -2,7 +2,8 @@
 
 This is an **interactive visual timeline** for the EuroVis 2026 conference deadlines and tracks. It displays multiple conference tracks with their key milestones, deadlines, and notifications in a clear, color-coded timeline view.
 
-<img width="1083" height="760" alt="image" src="https://github.com/user-attachments/assets/99fa443a-9715-4690-82a8-1dae6ea2ad05" />
+<img width="2560" height="1305" alt="image" src="https://github.com/user-attachments/assets/16cd2939-1238-4f6d-959e-92fa3254b15b" />
+
 
 
 ---

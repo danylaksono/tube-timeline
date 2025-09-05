@@ -426,7 +426,7 @@
 
       // Today line and flag
       // Set "today" to a future date (e.g., 1 March 2025)
-      const today = new Date(2026, 2, 1); // Months are 0-based: 2 = March
+      const today = new Date(); // Months are 0-based: 2 = March
       if (today >= allDates[0] && today <= allDates[allDates.length - 1]) {
         const linePos = isHorizontal ? xScale(today) : yScale(today);
         // Draw the today line

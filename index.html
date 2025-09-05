@@ -1,101 +1,142 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8" />
   <title>EuroVis 2026 Timeline 🐥</title>
   <script src="https://d3js.org/d3.v7.min.js"></script>
   <style>
-    body { margin: 0; font-family: sans-serif; }
-    svg { width: 100%; height: 100vh; background: #fff; }
-    .today-line { stroke: #888; stroke-width: 3; stroke-dasharray: 4; }
-    .footer {
-      position: absolute; 
-      bottom: 2px; 
-      left: 5px; 
-      font-size: 14px; 
-      color: #000;
+    html,
+    body {
+      height: 100%;
+      width: 100%;
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+      font-family: sans-serif;
     }
-    .footer svg {
-      width: 22px;
-      height: 22px;
+
+    svg {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background: #fff;
+      display: block;
+    }
+
+    .today-line {
+      stroke: #888;
+      stroke-width: 3;
+      stroke-dasharray: 4;
+    }
+
+    #github-link {
+      position: fixed;
+      left: 8px;
+      bottom: 8px;
+      z-index: 9999;
+      display: block;
+      width: 24px;
+      height: 24px;
+    }
+
+    #github-link svg {
+      position: static;
+      width: 100%;
+      height: 100%;
+      opacity: 0.7;
+      transition: opacity 0.2s;
+    }
+
+    .footer svg:hover {
+      opacity: 1;
     }
   </style>
 </head>
+
 <body>
   <svg></svg>
 
-<script>const data = [
-  {
-    track: "Full Papers",
-    color: "#1f77b4",
-    dates: [
-      { date: "26/11/2024", name: "Abstract deadline", type: "submission", url: "" },
-      { date: "03/12/2024", name: "Full paper deadline", type: "submission", url: "" },
-      { date: "11/02/2025", name: "First Round Notification", type: "notification", url: "" },
-      { date: "04/03/2025", name: "Revised Submission", type: "submission", url: "" },
-      { date: "18/03/2025", name: "Final Notification", type: "notification", url: "" },
-      { date: "15/04/2025", name: "Camera Ready Version", type: "submission", url: "" }
-    ]
-  },
-  {
-    track: "Short Papers",
-    color: "#ff7f0e",
-    dates: [
-      { date: "02/2025", name: "Submission deadline", type: "submission", url: "" },
-      { date: "04/2025", name: "Acceptance notification", type: "notification", url: "" },
-      { date: "04/2025", name: "Camera Ready Version", type: "submission", url: "" }
-    ]
-  },
-  {
-    track: "STARs",
-    color: "#2ca02c",
-    dates: [
-      { date: "13/10/2024", name: "STAR Sketch Submission", type: "submission", url: "" },
-      { date: "05/11/2024", name: "Invitation for Full STAR", type: "notification", url: "" },
-      { date: "12/01/2025", name: "Full STAR Submission", type: "submission", url: "" },
-      { date: "05/03/2025", name: "Full STAR Notification", type: "notification", url: "" },
-      { date: "25/03/2025", name: "Second Round Submission", type: "submission", url: "" },
-      { date: "08/04/2025", name: "Second Review Notification", type: "notification", url: "" },
-      { date: "22/04/2025", name: "Camera-Ready Deadline", type: "submission", url: "" }
-    ]
-  },
-  {
-    track: "Panels & Tutorials",
-    color: "#d62728",
-    dates: [
-      { date: "02/2025", name: "Submission deadline", type: "submission", url: "" },
-      { date: "03/2025", name: "Conditional Notification", type: "notification", url: "" },
-      { date: "04/2025", name: "Camera-Ready Abstract", type: "submission", url: "" }
-    ]
-  },
-  {
-    track: "Workshops",
-    color: "#9467bd",
-    dates: [
-      { date: "11/2024", name: "Proposal Submission", type: "submission", url: "" },
-      { date: "11/2024", name: "Notification", type: "notification", url: "" }
-    ]
-  },
-  {
-    track: "Education Papers",
-    color: "#8c564b",
-    dates: [
-      { date: "01/2025", name: "Submission", type: "submission", url: "" },
-      { date: "03/2025", name: "Notification", type: "notification", url: "" },
-      { date: "03/2025", name: "Camera-Ready", type: "submission", url: "" }
-    ]
-  },
-  {
-    track: "Posters & Demos",
-    color: "#e377c2",
-    dates: [
-      { date: "04/2025", name: "Submission", type: "submission", url: "" },
-      { date: "04/2025", name: "Notification", type: "notification", url: "" },
-      { date: "04/2025", name: "Camera-Ready", type: "submission", url: "" }
-    ]
-  }
-];
-
+  <script>const data = [
+      {
+        track: 'Full Papers',
+        label: 'FP',
+        color: '#E32017', // Bright red
+        dates: [
+          { date: '27/11/2025', name: 'Abstract deadline', type: 'start', url: 'https://eurovis.org.uk/full-papers/', label: 'Abstract' },
+          { date: '04/12/2025', name: 'Full paper deadline', type: 'submission', url: 'https://eurovis.org.uk/full-papers/', label: 'Submission' },
+          { date: '12/02/2026', name: 'First Round Notification', type: 'notification', url: 'https://eurovis.org.uk/full-papers/', label: 'Notification' },
+          { date: '05/03/2026', name: 'Revised Submission', type: 'submission', url: 'https://eurovis.org.uk/full-papers/', label: 'Revision' },
+          { date: '19/03/2026', name: 'Final Notification', type: 'notification', url: 'https://eurovis.org.uk/full-papers/', label: 'Notification' },
+          { date: '16/04/2026', name: 'Camera Ready Version', type: 'end', url: 'https://eurovis.org.uk/full-papers/', label: 'Camera Ready' }
+        ]
+      },
+      {
+        track: 'Short Papers',
+        label: 'SP',
+        color: '#B36305', // Orange-ish
+        dates: [
+          { date: '19/02/2026', name: 'Submission deadline', type: 'start', url: 'https://eurovis.org.uk/short-papers/', label: 'Submission' },
+          { date: '02/04/2026', name: 'Acceptance notification', type: 'notification', url: 'https://eurovis.org.uk/short-papers/', label: 'Notification' },
+          { date: '23/04/2026', name: 'Camera Ready Version', type: 'end', url: 'https://eurovis.org.uk/short-papers/', label: 'Camera Ready' }
+        ]
+      },
+      {
+        track: 'State of the Art Reports',
+        label: 'STAR',
+        color: '#FFD300', // Bright yellow
+        dates: [
+          { date: '13/10/2025', name: 'STAR Sketch Submission', type: 'start', url: 'https://eurovis.org.uk/state-of-the-art-reports-stars/', label: 'Sketch' },
+          { date: '05/11/2025', name: 'Invitation for Full STAR', type: 'notification', url: 'https://eurovis.org.uk/state-of-the-art-reports-stars/', label: 'Invitation' },
+          { date: '12/01/2026', name: 'Full STAR Submission', type: 'submission', url: 'https://eurovis.org.uk/state-of-the-art-reports-stars/', label: 'Submission' },
+          { date: '05/03/2026', name: 'Full STAR Notification', type: 'notification', url: 'https://eurovis.org.uk/state-of-the-art-reports-stars/', label: 'Notification' },
+          { date: '25/03/2026', name: 'Second Round Submission', type: 'submission', url: 'https://eurovis.org.uk/state-of-the-art-reports-stars/', label: 'Revision' },
+          { date: '08/04/2026', name: 'Second Review Notification', type: 'notification', url: 'https://eurovis.org.uk/state-of-the-art-reports-stars/', label: 'Notification' },
+          { date: '22/04/2026', name: 'Camera-Ready Deadline', type: 'end', url: 'https://eurovis.org.uk/state-of-the-art-reports-stars/', label: 'Camera Ready' }
+        ]
+      },
+      {
+        track: 'Panels & Tutorials',
+        label: 'P&T',
+        color: '#003688', // Dark blue
+        dates: [
+          { date: '26/02/2026', name: 'Submission deadline', type: 'start', url: 'https://eurovis.org.uk/panels-and-tutorials/', label: 'Submission' },
+          { date: '05/03/2026', name: 'Conditional Notification', type: 'notification', url: 'https://eurovis.org.uk/panels-and-tutorials/', label: 'Notification' },
+          { date: '16/04/2026', name: 'Camera-Ready Abstract', type: 'end', url: 'https://eurovis.org.uk/panels-and-tutorials/', label: 'Camera Ready' }
+        ]
+      },
+      {
+        track: 'Workshops',
+        label: 'WS',
+        color: '#00782A', // Vivid green
+        dates: [
+          { date: '29/09/2025', name: 'Proposal Submission', type: 'start', url: 'https://eurovis.org.uk/workshops/', label: 'Submission' },
+          { date: '15/10/2025', name: 'Notification', type: 'end', url: 'https://eurovis.org.uk/workshops/', label: 'Notification' }
+        ]
+      },
+      {
+        track: 'Education Papers',
+        label: 'ED',
+        color: '#9B0056', // Dark magenta
+        dates: [
+          { date: '08/01/2026', name: 'Submission', type: 'start', url: 'https://eurovis.org.uk/education-papers/', label: 'Submission' },
+          { date: '04/04/2026', name: 'Notification', type: 'notification', url: 'https://eurovis.org.uk/education-papers/', label: 'Notification' },
+          { date: '25/04/2026', name: 'Camera-Ready', type: 'end', url: 'https://eurovis.org.uk/education-papers/', label: 'Camera Ready' }
+        ]
+      },
+      {
+        track: 'Posters & Demos',
+        label: 'P&D',
+        color: '#0098D4', // Light blue
+        dates: [
+          { date: '06/04/2026', name: 'Submission', type: 'start', url: 'https://eurovis.org.uk/posters/', label: 'Submission' },
+          { date: '24/04/2026', name: 'Notification', type: 'notification', url: 'https://eurovis.org.uk/posters/', label: 'Notification' },
+          { date: '30/04/2026', name: 'Camera-Ready', type: 'end', url: 'https://eurovis.org.uk/posters/', label: 'Camera Ready' }
+        ]
+      }
+    ];
 
     const typeIcons = {
       start: '📄',     // For anything being submitted
@@ -132,58 +173,69 @@
     function renderHeader() {
       d3.select('.header-group').remove();
       const headerGroup = svg.append('g').attr('class', 'header-group');
+      // Even more compact header: smaller logo and reduced spacing
+      const minHeight = svg.node().clientHeight;
+      const logoHeight = Math.max(24, Math.min(40, minHeight * 0.08));
+      const titleFontSize = Math.max(14, Math.min(20, minHeight * 0.035));
+      const subtitleFontSize = Math.max(10, Math.min(13, minHeight * 0.022));
+
       headerGroup.append('image')
-        .attr('x', 10).attr('y', 10).attr('height', 80)
+        .attr('x', 6).attr('y', 4).attr('height', logoHeight)
         .attr('href', 'logo.png').attr('preserveAspectRatio', 'xMidYMid meet');
       headerGroup.append('text')
-        .attr('x', 90).attr('y', 50).attr('text-anchor', 'start')
-        .attr('font-size', 32).attr('font-weight', 'bold')
+        .attr('x', logoHeight + 12).attr('y', logoHeight * 0.6)
+        .attr('text-anchor', 'start')
+        .attr('font-size', titleFontSize).attr('font-weight', 'bold')
         .attr('font-family', 'sans-serif').attr('fill', '#222')
         .text('EuroVis 2026 Timeline');
       headerGroup.append('text')
-        .attr('x', 90).attr('y', 68).attr('text-anchor', 'start')
-        .attr('font-size', 18).attr('font-family', 'sans-serif')
+        .attr('x', logoHeight + 12).attr('y', logoHeight * 0.95)
+        .attr('text-anchor', 'start')
+        .attr('font-size', subtitleFontSize).attr('font-family', 'sans-serif')
         .attr('fill', '#666').text('Key Deadlines for All Tracks');
 
       // Legend
-      const legendSpacing = 28, legendCols = 2;
+      // Smaller legend: less spacing, padding, and font size
+      const isHeightConstrained = svg.node().clientHeight < 500;
+      const legendSpacing = isHeightConstrained ? 14 : 18;
+      const legendCols = 2;
       const legendRows = Math.ceil(data.length / legendCols);
       let maxTextWidths = [0, 0];
       data.forEach((track, i) => {
         const col = i % legendCols;
         const tempText = headerGroup.append('text')
-          .attr('x', 0).attr('y', -100).attr('font-size', 16)
+          .attr('x', 0).attr('y', -100).attr('font-size', isHeightConstrained ? 10 : 13)
           .attr('font-family', 'sans-serif').text(track.track);
         const textWidth = tempText.node().getBBox().width;
         if (textWidth > maxTextWidths[col]) maxTextWidths[col] = textWidth;
         tempText.remove();
       });
       const isVertical = window.innerWidth < window.innerHeight;
-      const colWidth = Math.max(...maxTextWidths) + (isVertical ? 5 : 14);
-      const legendRectWidth = legendCols * colWidth + (isVertical ? 8 : 14);
-      const legendHeight = legendRows * (isVertical ? 22 : legendSpacing) + (isVertical ? 8 : 14);
-      const legendPadding = isVertical ? 8 : 12;
+      const colWidth = Math.max(...maxTextWidths) + (isVertical ? 2 : 8);
+      const legendRectWidth = legendCols * colWidth + (isVertical ? 4 : 8);
+      const legendHeight = legendRows * (isVertical ? 12 : 18);
+      const legendPadding = 5;
       const legendX = svg.node().clientWidth - legendRectWidth - legendPadding;
-      const legendY = 30;
+      const legendY = 6; // Align with top of logo
       const legendGroup = headerGroup.append('g')
         .attr('class', 'subway-legend')
-        .attr('transform', `translate(${legendX},${legendY})`);
+        .attr('transform', `translate(${legendX},${legendY + 2})`);
       legendGroup.append('rect')
         .attr('x', -legendPadding).attr('y', -legendPadding)
         .attr('width', legendRectWidth).attr('height', legendHeight)
-        .attr('rx', 8).attr('fill', '#fff').attr('stroke', '#000')
-        .attr('stroke-width', 3).attr('opacity', 1);
+        .attr('rx', 6).attr('fill', '#fff').attr('stroke', '#000')
+        .attr('stroke-width', 2).attr('opacity', 1);
       data.forEach((track, i) => {
         const col = i % legendCols, row = Math.floor(i / legendCols);
-        const xBase = col * colWidth, yBase = row * (isVertical ? 22 : legendSpacing) + (isVertical ? 4 : 8);
+        const xBase = col * colWidth, yBase = row * (isVertical ? 10 : legendSpacing) + (isVertical ? 2 : 4);
         legendGroup.append('line')
           .attr('x1', xBase).attr('y1', yBase)
-          .attr('x2', xBase + 16).attr('y2', yBase)
-          .attr('stroke', track.color).attr('stroke-width', 8)
+          .attr('x2', xBase + (isHeightConstrained ? 8 : 12)).attr('y2', yBase)
+          .attr('stroke', track.color).attr('stroke-width', isHeightConstrained ? 4 : 6)
           .attr('stroke-linecap', 'round');
         legendGroup.append('text')
-          .attr('x', xBase + 25).attr('y', yBase + 6)
-          .attr('font-size', 14).attr('fill', '#222')
+          .attr('x', xBase + (isHeightConstrained ? 12 : 17)).attr('y', yBase + (isHeightConstrained ? 3 : 4))
+          .attr('font-size', isHeightConstrained ? 9 : 11).attr('fill', '#222')
           .attr('font-family', 'sans-serif').text(track.track);
       });
     }
@@ -228,23 +280,43 @@
     // --- Main Render ---
     function render() {
       svg.selectAll('*').remove();
+      
+      // Get viewport dimensions and calculate scale factors
+      const viewportHeight = svg.node().clientHeight;
+      const viewportWidth = svg.node().clientWidth;
+      const isHorizontal = viewportWidth >= viewportHeight;
+      const isHeightConstrained = viewportHeight < 500;
+      
+      // Calculate scale based on viewport height
+      const scale = isHeightConstrained ? Math.max(0.6, viewportHeight / 500) : 1;
+      
+      // Base header height that will be scaled - reduced base height
+      const baseHeaderHeight = isHorizontal ? 50 : 40;
+      const headerHeight = Math.min(baseHeaderHeight * scale, viewportHeight * 0.12);
+      
+      // Scale margins proportionally - minimized top margin
+      const margin = {
+        top: Math.min(16 * scale, viewportHeight * 0.03),
+        right: 60 * scale,
+        bottom: Math.min(30 * scale, viewportHeight * 0.06),
+        left: 35 * scale
+      };
+
+      // Render header
       renderHeader();
-      const isHorizontal = window.innerWidth >= window.innerHeight;
-      const headerHeight = isHorizontal ? 130 : 90;
-      const margin = { top: 40, right: 75, bottom: 40, left: 35 };
       const height = svg.node().clientHeight - margin.top - margin.bottom - headerHeight;
-      const laneHeight = 15;
-      const g = svg.append('g').attr('transform', `translate(${isHorizontal ? margin.left/2 : margin.left},${margin.top + headerHeight})`);
-      const width = svg.node().clientWidth - (isHorizontal ? 0 : margin.left) - (isHorizontal ? margin.right : 1.5 * margin.right);
+      const laneHeight = 15 * scale;
+      const g = svg.append('g').attr('transform', `translate(${isHorizontal ? margin.left / 2 : margin.left},${margin.top + headerHeight})`);
+      const width = svg.node().clientWidth - (isHorizontal ? margin.right : margin.left + 1.5 * margin.right);
 
       let xScale, yScale;
       const trackLinesGroup = g.append('g')
         .attr('class', 'track-lines-group')
-        .attr('transform', isHorizontal ?  'translate(0, 75)' : 'translate(0, 0)');
+        .attr('transform', isHorizontal ? 'translate(0, 60)' : 'translate(0, 0)');
 
       if (isHorizontal) {
         xScale = d3.scaleTime().domain(d3.extent(allDates)).range([margin.left, width]);
-        yScale = d3.scalePoint().domain(trackNames).range([10, height - 75]).padding(0);
+        yScale = d3.scalePoint().domain(trackNames).range([20, height - height * 0.15]).padding(0.1);
         trackLinesGroup.selectAll('.track-line')
           .data(data).enter().append('line')
           .attr('class', 'track-line')
@@ -254,7 +326,7 @@
           .attr('stroke', d => d.color).attr('stroke-width', laneHeight).attr('stroke-linecap', 'round');
       } else {
         xScale = d3.scalePoint().domain(trackNames).range([16, width - 16]).padding(0);
-        yScale = d3.scaleTime().domain(d3.extent(allDates)).range([0, height]);
+        yScale = d3.scaleTime().domain(d3.extent(allDates)).range([height * 0.05, height * 0.95]);
         trackLinesGroup.selectAll('.track-line')
           .data(data).enter().append('line')
           .attr('class', 'track-line')
@@ -280,14 +352,14 @@
             if (d.type === 'start' || d.type === 'end') {
               d3.select(this).append('rect')
                 .attr('x', isHorizontal ? -laneHeight : -laneHeight)
-                .attr('y', isHorizontal ? -laneHeight*1.5 : -laneHeight * 0.625)
+                .attr('y', isHorizontal ? -laneHeight * 1.5 : -laneHeight * 0.625)
                 .attr('width', isHorizontal ? laneHeight * 1.5 : laneHeight * 2)
                 .attr('height', isHorizontal ? laneHeight * 3 : laneHeight * 1.25)
                 .attr('fill', '#fff').attr('stroke', '#000').attr('stroke-width', 5)
                 .attr('rx', 8).attr('ry', 8);
             } else {
               d3.select(this).append('rect')
-                .attr('x', 0).attr('y', isHorizontal ? -laneHeight*2 : 0)
+                .attr('x', 0).attr('y', isHorizontal ? -laneHeight * 2 : 0)
                 .attr('width', isHorizontal ? laneHeight : laneHeight * 1.5)
                 .attr('height', isHorizontal ? laneHeight * 2 : laneHeight)
                 .attr('fill', track.color).attr('stroke', 'none')
@@ -295,12 +367,13 @@
             }
             const labelLines = (d.label || '').split(' ');
             labelLines.forEach((line, i) => {
-              const labelYOffset = isHorizontal ? -laneHeight * 2.75 + i * 16 : 5 + i * 16;
+              const labelSpacing = isHeightConstrained ? 12 : 16;
+              const labelYOffset = isHorizontal ? -laneHeight * 2.75 + i * labelSpacing : 5 + i * labelSpacing;
               const labelXOffset = isHorizontal ? 0 : laneHeight * 2.2;
               d3.select(this).append('text')
                 .attr('class', 'milestone-label')
                 .attr('text-anchor', 'start')
-                .attr('font-size', 15).attr('font-weight', 'bold')
+                .attr('font-size', isHeightConstrained ? 11 : 15).attr('font-weight', 'bold')
                 .attr('font-family', 'sans-serif').attr('fill', '#222')
                 .attr('x', labelXOffset).attr('y', labelYOffset)
                 .attr('transform', `rotate(-30 ${labelXOffset} ${labelYOffset})`)
@@ -330,12 +403,12 @@
         g.selectAll('.month-tick').data(months).enter().append('line')
           .attr('class', 'month-tick')
           .attr('x1', d => xScale(d)).attr('x2', d => xScale(d))
-          .attr('y1', 0).attr('y2', height)
+          .attr('y1', 45).attr('y2', height) // Start grid lines below header
           .attr('stroke', '#ddd').attr('stroke-width', 1);
         g.selectAll('.month-label').data(months).enter().append('text')
           .attr('class', 'month-label')
-          .attr('x', d => xScale(d)).attr('y', -10)
-          .attr('text-anchor', 'middle').attr('font-size', 11)
+          .attr('x', d => xScale(d)).attr('y', 35) // Move month labels down
+          .attr('text-anchor', 'middle').attr('font-size', 11 * scale)
           .attr('fill', '#bbb').text(d => d3.timeFormat('%b')(d));
       } else {
         g.selectAll('.month-tick').data(months).enter().append('line')
@@ -350,16 +423,66 @@
           .attr('fill', '#bbb').text(d => d3.timeFormat('%b')(d));
       }
 
-      // Today line
-      const today = new Date();
+
+      // Today line and flag
+      // Set "today" to a future date (e.g., 1 March 2025)
+      const today = new Date(2026, 2, 1); // Months are 0-based: 2 = March
       if (today >= allDates[0] && today <= allDates[allDates.length - 1]) {
         const linePos = isHorizontal ? xScale(today) : yScale(today);
+        // Draw the today line
         g.append('line')
           .attr('class', 'today-line')
           .attr(isHorizontal ? 'x1' : 'y1', linePos)
           .attr(isHorizontal ? 'x2' : 'y2', linePos)
-          .attr(isHorizontal ? 'y1' : 'x1', 0)
+          .attr(isHorizontal ? 'y1' : 'x1', isHorizontal ? 45 : 0)
           .attr(isHorizontal ? 'y2' : 'x2', isHorizontal ? height : width);
+
+        // Responsive flag size
+        // Moderate, readable flag size
+        const baseFlagWidth = Math.max(48, Math.min(80, svg.node().clientWidth * 0.045));
+        const baseFlagHeight = Math.max(20, Math.min(32, svg.node().clientHeight * 0.025));
+
+        const flagGroup = g.append('g').attr('class', 'today-flag-group');
+        const flagX = isHorizontal ? linePos : 0;
+        const flagY = isHorizontal ? 45 : linePos; // Position flag lower
+        if (isHorizontal) {
+          // Right-pointing flag
+          flagGroup.append('polygon')
+            .attr('points', `${flagX},${flagY} ${flagX + baseFlagWidth},${flagY + baseFlagHeight / 2} ${flagX},${flagY + baseFlagHeight}`)
+            .attr('fill', '#e74c3c').attr('stroke', '#b03a2e').attr('stroke-width', 2);
+          // Centered label
+          flagGroup.append('text')
+            .attr('x', flagX + 20)
+            .attr('y', flagY + 15)
+            .attr('font-size', 13)
+            .attr('font-family', 'sans-serif')
+            .attr('fill', '#fff')
+            .attr('font-weight', 'bold')
+            .attr('text-anchor', 'middle')
+            .attr('alignment-baseline', 'middle')
+            .style('paint-order', 'stroke')
+            .style('stroke', '#b03a2e')
+            .style('stroke-width', '1px')
+            .text('Today');
+        } else {
+          // Down-pointing flag
+          // flagGroup.append('polygon')
+          //   .attr('points', `${flagX},${flagY} ${flagX+baseFlagHeight/2},${flagY+baseFlagWidth} ${flagX+baseFlagHeight},${flagY}`)
+          //   .attr('fill', '#e74c3c').attr('stroke', '#b03a2e').attr('stroke-width', 2);
+          // flagGroup.append('text')
+          //   .attr('x', flagX + baseFlagHeight/2)
+          //   .attr('y', flagY + baseFlagWidth * 0.55)
+          //   .attr('font-size', fontSize)
+          //   .attr('font-family', 'sans-serif')
+          //   .attr('fill', '#fff')
+          //   .attr('font-weight', 'bold')
+          //   .attr('text-anchor', 'middle')
+          //   .attr('alignment-baseline', 'middle')
+          //   .style('paint-order', 'stroke')
+          //   .style('stroke', '#b03a2e')
+          //   .style('stroke-width', '1.5px')
+          //   .text('Today');
+        }
       }
       g.selectAll('.today-line').lower();
       g.selectAll('.track-line').raise();
@@ -371,12 +494,12 @@
     window.addEventListener('resize', render);
   </script>
 
-  <footer class="footer">
-    <a href="https://github.com/velitchko/eurovis-timeline" target="_blank">
-      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="black">
-        <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.6-.18-3.29-.8-3.29-3.56 0-.79.28-1.43.74-1.93-.07-.18-.32-.91.07-1.89 0 0 .6-.19 1.97.73a6.8 6.8 0 0 1 1.8-.24c.61 0 1.22.08 1.8.24 1.37-.92 1.97-.73 1.97-.73.39.98.14 1.71.07 1.89.46.5.74 1.14.74 1.93 0 2.77-1.69 3.38-3.3 3.56.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.19 0 .21.15.46.55.38A8.013 8.013 0 0 0 16 8c0-4.42-3.58-8-8-8z"/>
-      </svg>
-    </a>
-  </footer>
+  <a id="github-link" href="https://github.com/velitchko/eurovis-timeline" target="_blank" title="View on GitHub">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="black">
+      <path
+        d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.6-.18-3.29-.8-3.29-3.56 0-.79.28-1.43.74-1.93-.07-.18-.32-.91.07-1.89 0 0 .6-.19 1.97.73a6.8 6.8 0 0 1 1.8-.24c.61 0 1.22.08 1.8.24 1.37-.92 1.97-.73 1.97-.73.39.98.14 1.71.07 1.89.46.5.74 1.14.74 1.93 0 2.77-1.69 3.38-3.3 3.56.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.19 0 .21.15.46.55.38A8.013 8.013 0 0 0 16 8c0-4.42-3.58-8-8-8z" />
+    </svg>
+  </a>
 </body>
+
 </html>

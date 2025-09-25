@@ -2,6 +2,8 @@
 
 London tube style configurable timeline renderer powered by D3 v7. Ships as a tiny ES module you can use directly in the browser or bundle in your app.
 
+This work is heavily inspired by https://velitchko.github.io/eurovis-timeline/, for the EuroVIS 2026.
+
 ### Install
 
 Use via script module directly (no build step):
@@ -64,97 +66,136 @@ timeline.render();
 - `render()` Re-renders responsively; reattaches resize listener
 - `destroy()` Clears SVG and removes listeners
 
+### Examples
+
+The library comes with several example implementations:
+
+- **Product Launch Timeline** (`examples/product-launch.html`) - A comprehensive software product development and launch timeline
+- **EuroVIS 2026 Conference** (`examples/eurovis-2026.html`) - Academic conference deadlines and tracks
+- **Home Demo** (`index.html`) - Interactive demo showcasing the library capabilities
+
 ### Demo
 
-Open `index.html` in a static server. The page imports the module and renders the EuroVis example.
+Open `index.html` in a static server to see the interactive timeline in action. Navigate between different examples using the navigation menu.
 
-# EuroVis 2026 Conference Interactive Timeline
+## Examples
 
-This is an **interactive visual timeline** for the EuroVis 2026 conference deadlines and tracks. It displays multiple conference tracks with their key milestones, deadlines, and notifications in a clear, color-coded timeline view.
+### Product Launch Timeline
 
-<img width="2560" height="1305" alt="image" src="https://github.com/user-attachments/assets/16cd2939-1238-4f6d-959e-92fa3254b15b" />
+A comprehensive example showing a software product development lifecycle with multiple parallel tracks:
 
+- **Product Development** - Core development milestones
+- **Quality Assurance** - Testing and validation phases  
+- **Marketing & Launch** - Brand and promotional activities
+- **Sales & Partnerships** - Business development and sales preparation
+- **Legal & Compliance** - Legal requirements and approvals
+- **Infrastructure & DevOps** - Technical infrastructure setup
 
+### EuroVIS 2026 Conference Timeline
 
----
+The original academic conference example featuring multiple submission tracks:
+
+- Full Papers, Short Papers, State of the Art Reports
+- Panels & Tutorials, Workshops, Education Papers
+- Posters & Demos
 
 ## Features
 
-- Displays multiple tracks with distinct colors and labels (e.g., Full Papers, Short Papers, Workshops, etc.).
-- Shows important dates and deadlines as milestone icons with tooltips.
-- Responsive layout: switches between horizontal and vertical timeline based on window width.
-- Hover tooltips provide detailed information about each milestone.
-- Clickable milestones can link to URLs (currently empty placeholders).
-- "Today" indicator line (configurable for testing).
-- Easily extendable to other conferences or events by modifying the `data` array.
-
----
+- **Multiple Tracks**: Display parallel timelines with distinct colors and labels
+- **Interactive Milestones**: Hover tooltips and clickable milestones with optional URLs
+- **Responsive Design**: Automatically switches between horizontal and vertical layouts
+- **Modular Examples**: Separate HTML files and JSON data for easy customization
+- **Today Indicator**: Visual "today" line for current date reference
+- **Extensible**: Easy to add new examples and customize existing ones
 
 ## Usage
 
-### How to run
+### Basic Setup
 
-1. Save the provided code as `index.html`.
-2. Open it in any modern web browser (Chrome, Firefox, Edge, Safari).
-3. Resize the window to see the layout adapt between horizontal and vertical modes.
+```html
+<!DOCTYPE html>
+<html>
+<head>
+  <script src="https://d3js.org/d3.v7.min.js"></script>
+</head>
+<body>
+  <svg></svg>
+  <script type="module">
+    import { TubeTimeline } from './src/tube-timeline.js';
+    
+    const timeline = new TubeTimeline({
+      target: document.querySelector('svg'),
+      data: yourData,
+      options: {
+        header: { title: 'My Timeline', subtitle: 'Description' },
+        showToday: true,
+        orientation: 'auto'
+      }
+    });
+    timeline.render();
+  </script>
+</body>
+</html>
+```
 
-### How to customize
+### Data Structure
 
-- The timeline data is stored in the `data` array inside the `<script>` tag.
-- Each track object has:
-  - `track`: Full track name
-  - `label`: Short label shown on the timeline
-  - `color`: Color for the track line and icons (hex code)
-  - `dates`: Array of milestone objects with:
-    - `date`: Deadline date (format MM/YYYY or DD/MM/YY)
-    - `name`: Milestone description
-    - `type`: Type of milestone (controls icon and tooltip)
-    - `url`: Optional URL to open on click (currently empty)
-- To add or modify tracks or deadlines, update this `data` array accordingly.
+```javascript
+const data = [
+  {
+    track: 'Track Name',
+    label: 'TN', // Short label for display
+    color: '#E32017', // Hex color
+    dates: [
+      {
+        date: '01/01/2024', // DD/MM/YYYY or MM/YYYY
+        name: 'Milestone Name',
+        type: 'start', // See supported types below
+        url: 'https://example.com', // Optional
+        label: 'Short Label' // Optional
+      }
+    ]
+  }
+];
+```
 
-### Supported milestone types and icons
+### Supported Milestone Types
 
 | Type          | Icon | Description                       |
 |---------------|------|---------------------------------|
-| start         | 📄   | Submission or beginning          |
-| abstract      | 📝   | Abstract deadline                |
-| submission    | 📬   | Submission deadline              |
-| review        | 🔍   | Review period                   |
-| notification  | 📢   | Notification of decisions        |
-| cameraReady   | 🖨️   | Final camera-ready submission    |
-| end           | ✅   | Final deadline or milestone      |
-| invitation    | ✉️   | Invitation to submit             |
+| start         | 📄   | Beginning or kickoff             |
+| abstract      | 📝   | Abstract or planning phase       |
+| submission    | 📬   | Submission or delivery           |
+| review        | 🔍   | Review or evaluation period      |
+| notification  | 📢   | Notification or announcement     |
+| cameraReady   | 🖨️   | Final delivery or publication    |
+| end           | ✅   | Completion or final milestone    |
+| invitation    | ✉️   | Invitation or request            |
 
----
+## Project Structure
+
+```
+tube-timeline/
+├── src/
+│   └── tube-timeline.js          # Main library
+├── examples/
+│   ├── data/
+│   │   ├── product-launch.json   # Product launch data
+│   │   └── eurovis-2026.json     # Conference data
+│   ├── product-launch.html       # Product launch example
+│   └── eurovis-2026.html         # Conference example
+├── index.html                    # Main demo page
+├── package.json
+└── README.md
+```
 
 ## Dependencies
 
-- [D3.js v7](https://d3js.org/d3.v7.min.js) for rendering SVG elements and scales.
-
----
-
-## Notes
-
-- The timeline automatically scales to fit the window size.
-- Milestones display tooltips on hover.
-- The "Today" line can be set to a specific date for testing by uncommenting and modifying the `today` variable in the script.
-- The project is designed to be generic and reusable for any multi-track event timeline — just update the `data` array.
-
----
+- [D3.js v7](https://d3js.org/d3.v7.min.js) for rendering SVG elements and scales
 
 ## License
 
 This project is released under the MIT License.
-
----
-
-Feel free to contribute improvements or extend this timeline for your own conferences or events!
-
----
-
-*Created for EuroVis 2026 visualization and planning.*
-
----
 
 ## Author
 

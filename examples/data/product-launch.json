@@ -1,0 +1,74 @@
+[
+  {
+    "track": "Product Development",
+    "label": "Dev",
+    "color": "#E32017",
+    "dates": [
+      { "date": "01/01/2024", "name": "Project Kickoff", "type": "start", "url": "#", "label": "Kickoff" },
+      { "date": "15/01/2024", "name": "Requirements Gathering", "type": "abstract", "url": "#", "label": "Requirements" },
+      { "date": "01/02/2024", "name": "Architecture Design", "type": "submission", "url": "#", "label": "Architecture" },
+      { "date": "15/03/2024", "name": "MVP Development Start", "type": "start", "url": "#", "label": "MVP Start" },
+      { "date": "01/06/2024", "name": "MVP Complete", "type": "end", "url": "#", "label": "MVP Done" }
+    ]
+  },
+  {
+    "track": "Quality Assurance",
+    "label": "QA",
+    "color": "#B36305",
+    "dates": [
+      { "date": "01/04/2024", "name": "Test Planning", "type": "start", "url": "#", "label": "Planning" },
+      { "date": "15/05/2024", "name": "Alpha Testing", "type": "review", "url": "#", "label": "Alpha" },
+      { "date": "15/06/2024", "name": "Beta Testing", "type": "review", "url": "#", "label": "Beta" },
+      { "date": "01/07/2024", "name": "Bug Fixes", "type": "submission", "url": "#", "label": "Fixes" },
+      { "date": "15/07/2024", "name": "Final Testing", "type": "end", "url": "#", "label": "Final QA" }
+    ]
+  },
+  {
+    "track": "Marketing & Launch",
+    "label": "Marketing",
+    "color": "#FFD300",
+    "dates": [
+      { "date": "01/03/2024", "name": "Brand Identity", "type": "start", "url": "#", "label": "Brand" },
+      { "date": "01/04/2024", "name": "Website Launch", "type": "submission", "url": "#", "label": "Website" },
+      { "date": "01/05/2024", "name": "Social Media Campaign", "type": "start", "url": "#", "label": "Social" },
+      { "date": "01/06/2024", "name": "Press Release", "type": "notification", "url": "#", "label": "Press" },
+      { "date": "15/07/2024", "name": "Product Launch", "type": "end", "url": "#", "label": "Launch" }
+    ]
+  },
+  {
+    "track": "Sales & Partnerships",
+    "label": "Sales",
+    "color": "#003688",
+    "dates": [
+      { "date": "01/02/2024", "name": "Sales Strategy", "type": "start", "url": "#", "label": "Strategy" },
+      { "date": "01/03/2024", "name": "Partner Outreach", "type": "invitation", "url": "#", "label": "Partners" },
+      { "date": "01/04/2024", "name": "Pricing Finalization", "type": "submission", "url": "#", "label": "Pricing" },
+      { "date": "01/05/2024", "name": "Sales Training", "type": "review", "url": "#", "label": "Training" },
+      { "date": "01/06/2024", "name": "Pre-orders Open", "type": "start", "url": "#", "label": "Pre-orders" }
+    ]
+  },
+  {
+    "track": "Legal & Compliance",
+    "label": "Legal",
+    "color": "#00782A",
+    "dates": [
+      { "date": "01/01/2024", "name": "Legal Review", "type": "start", "url": "#", "label": "Review" },
+      { "date": "01/02/2024", "name": "Terms of Service", "type": "submission", "url": "#", "label": "ToS" },
+      { "date": "01/03/2024", "name": "Privacy Policy", "type": "submission", "url": "#", "label": "Privacy" },
+      { "date": "01/04/2024", "name": "Compliance Check", "type": "review", "url": "#", "label": "Compliance" },
+      { "date": "01/05/2024", "name": "Legal Approval", "type": "notification", "url": "#", "label": "Approval" }
+    ]
+  },
+  {
+    "track": "Infrastructure & DevOps",
+    "label": "DevOps",
+    "color": "#9B0056",
+    "dates": [
+      { "date": "01/02/2024", "name": "Infrastructure Planning", "type": "start", "url": "#", "label": "Planning" },
+      { "date": "01/03/2024", "name": "Cloud Setup", "type": "submission", "url": "#", "label": "Cloud" },
+      { "date": "01/04/2024", "name": "CI/CD Pipeline", "type": "submission", "url": "#", "label": "CI/CD" },
+      { "date": "01/05/2024", "name": "Security Audit", "type": "review", "url": "#", "label": "Security" },
+      { "date": "01/06/2024", "name": "Production Ready", "type": "end", "url": "#", "label": "Production" }
+    ]
+  }
+]

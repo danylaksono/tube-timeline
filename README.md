@@ -46,7 +46,9 @@ const timeline = new TubeTimeline({
   options: {
     header: { title: 'My Timeline', subtitle: 'Deadlines', logoHref: 'logo.png' },
     showToday: true,
-    orientation: 'auto' // 'horizontal' | 'vertical' | 'auto'
+    orientation: 'auto', // 'horizontal' | 'vertical' | 'auto'
+    debug: false, // Enable debug logging
+    accessibility: true // Enable accessibility features
   }
 });
 timeline.render();
@@ -62,9 +64,29 @@ timeline.render();
   - **options.showToday**: show the Today marker (default true)
   - **options.orientation**: `'auto' | 'horizontal' | 'vertical'`
   - **options.onMilestoneClick**: handler `(milestone, track)`; default opens `milestone.url` if present
+  - **options.debug**: enable debug logging (default false)
+  - **options.accessibility**: enable accessibility features (default true)
 
 - `render()` Re-renders responsively; reattaches resize listener
 - `destroy()` Clears SVG and removes listeners
+
+### Error Handling
+
+The library now includes comprehensive error handling and validation:
+
+- **Input validation**: Validates data structure, date formats, and color values
+- **Graceful degradation**: Shows appropriate messages for empty or invalid data
+- **Debug logging**: Enable with `options.debug: true` for detailed console output
+- **Error states**: Displays user-friendly error messages when rendering fails
+
+### Accessibility Features
+
+When `options.accessibility` is enabled (default):
+
+- **ARIA attributes**: Proper roles and labels for screen readers
+- **Keyboard navigation**: Use Tab to navigate milestones, Enter/Space to activate
+- **Focus management**: Clear focus indicators for interactive elements
+- **Semantic markup**: Proper heading structure and descriptions
 
 ### Examples
 

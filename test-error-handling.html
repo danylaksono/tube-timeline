@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Tube Timeline - Error Handling Test</title>
+  <script src="https://d3js.org/d3.v7.min.js"></script>
+  <style>
+    body {
+      font-family: sans-serif;
+      margin: 20px;
+      background: #f5f5f5;
+    }
+    .test-section {
+      background: white;
+      margin: 20px 0;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    .test-title {
+      color: #333;
+      margin-bottom: 10px;
+    }
+    svg {
+      border: 1px solid #ddd;
+      background: white;
+      margin: 10px 0;
+    }
+    .error-message {
+      color: #e74c3c;
+      font-weight: bold;
+      margin: 10px 0;
+    }
+    .success-message {
+      color: #27ae60;
+      font-weight: bold;
+      margin: 10px 0;
+    }
+    button {
+      background: #007cba;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 4px;
+      cursor: pointer;
+      margin: 5px;
+    }
+    button:hover {
+      background: #005a87;
+    }
+  </style>
+</head>
+<body>
+  <h1>Tube Timeline - Error Handling & Validation Test</h1>
+  <p>This page demonstrates the improved error handling and validation features.</p>
+
+  <div class="test-section">
+    <h2 class="test-title">Test 1: Invalid Data Structure</h2>
+    <p>Testing with malformed data to see error handling in action.</p>
+    <button onclick="testInvalidData()">Test Invalid Data</button>
+    <div id="test1-result"></div>
+    <svg id="test1-svg" width="800" height="200"></svg>
+  </div>
+
+  <div class="test-section">
+    <h2 class="test-title">Test 2: Empty Data Array</h2>
+    <p>Testing with empty data array to see empty state handling.</p>
+    <button onclick="testEmptyData()">Test Empty Data</button>
+    <div id="test2-result"></div>
+    <svg id="test2-svg" width="800" height="200"></svg>
+  </div>
+
+  <div class="test-section">
+    <h2 class="test-title">Test 3: Invalid Date Formats</h2>
+    <p>Testing with invalid date formats to see date validation.</p>
+    <button onclick="testInvalidDates()">Test Invalid Dates</button>
+    <div id="test3-result"></div>
+    <svg id="test3-svg" width="800" height="200"></svg>
+  </div>
+
+  <div class="test-section">
+    <h2 class="test-title">Test 4: Valid Data with Debug Logging</h2>
+    <p>Testing with valid data and debug logging enabled.</p>
+    <button onclick="testValidDataWithDebug()">Test Valid Data (Debug ON)</button>
+    <div id="test4-result"></div>
+    <svg id="test4-svg" width="800" height="200"></svg>
+  </div>
+
+  <div class="test-section">
+    <h2 class="test-title">Test 5: Accessibility Features</h2>
+    <p>Testing accessibility features with keyboard navigation.</p>
+    <button onclick="testAccessibility()">Test Accessibility</button>
+    <div id="test5-result"></div>
+    <svg id="test5-svg" width="800" height="200"></svg>
+  </div>
+
+  <script type="module">
+    import { TubeTimeline } from './src/tube-timeline.js';
+
+    // Test data
+    const validData = [
+      {
+        track: "Test Track",
+        label: "TT",
+        color: "#E32017",
+        dates: [
+          { date: "01/01/2024", name: "Start", type: "start", label: "Start" },
+          { date: "15/06/2024", name: "End", type: "end", label: "End" }
+        ]
+      }
+    ];
+
+    const invalidData = [
+      {
+        track: "Invalid Track",
+        // Missing required properties
+        dates: [
+          { date: "invalid-date", name: "Invalid", type: "invalid-type" }
+        ]
+      }
+    ];
+
+    const emptyData = [];
+
+    const invalidDatesData = [
+      {
+        track: "Date Test Track",
+        color: "#E32017",
+        dates: [
+          { date: "32/13/2024", name: "Invalid Date", type: "start" },
+          { date: "01/01/24", name: "Wrong Format", type: "end" },
+          { date: "01/01/2024", name: "Valid Date", type: "start" }
+        ]
+      }
+    ];
+
+    window.testInvalidData = function() {
+      const resultDiv = document.getElementById('test1-result');
+      const svg = document.getElementById('test1-svg');
+      
+      try {
+        const timeline = new TubeTimeline({
+          target: svg,
+          data: invalidData,
+          options: {
+            debug: true,
+            accessibility: true
+          }
+        });
+        timeline.render();
+        resultDiv.innerHTML = '<div class="error-message">Error: This should have failed validation!</div>';
+      } catch (error) {
+        resultDiv.innerHTML = `<div class="success-message">✓ Caught validation error: ${error.message}</div>`;
+      }
+    };
+
+    window.testEmptyData = function() {
+      const resultDiv = document.getElementById('test2-result');
+      const svg = document.getElementById('test2-svg');
+      
+      try {
+        const timeline = new TubeTimeline({
+          target: svg,
+          data: emptyData,
+          options: {
+            debug: true,
+            accessibility: true
+          }
+        });
+        timeline.render();
+        resultDiv.innerHTML = '<div class="success-message">✓ Empty state handled gracefully</div>';
+      } catch (error) {
+        resultDiv.innerHTML = `<div class="error-message">Error: ${error.message}</div>`;
+      }
+    };
+
+    window.testInvalidDates = function() {
+      const resultDiv = document.getElementById('test3-result');
+      const svg = document.getElementById('test3-svg');
+      
+      try {
+        const timeline = new TubeTimeline({
+          target: svg,
+          data: invalidDatesData,
+          options: {
+            debug: true,
+            accessibility: true
+          }
+        });
+        timeline.render();
+        resultDiv.innerHTML = '<div class="success-message">✓ Invalid dates filtered out, valid dates rendered</div>';
+      } catch (error) {
+        resultDiv.innerHTML = `<div class="error-message">Error: ${error.message}</div>`;
+      }
+    };
+
+    window.testValidDataWithDebug = function() {
+      const resultDiv = document.getElementById('test4-result');
+      const svg = document.getElementById('test4-svg');
+      
+      try {
+        const timeline = new TubeTimeline({
+          target: svg,
+          data: validData,
+          options: {
+            debug: true,
+            accessibility: true,
+            header: { title: 'Debug Test', subtitle: 'Check console for debug logs' }
+          }
+        });
+        timeline.render();
+        resultDiv.innerHTML = '<div class="success-message">✓ Valid data rendered successfully. Check console for debug logs.</div>';
+      } catch (error) {
+        resultDiv.innerHTML = `<div class="error-message">Error: ${error.message}</div>`;
+      }
+    };
+
+    window.testAccessibility = function() {
+      const resultDiv = document.getElementById('test5-result');
+      const svg = document.getElementById('test5-svg');
+      
+      try {
+        const timeline = new TubeTimeline({
+          target: svg,
+          data: validData,
+          options: {
+            debug: false,
+            accessibility: true,
+            header: { title: 'Accessibility Test', subtitle: 'Try Tab navigation and keyboard interaction' }
+          }
+        });
+        timeline.render();
+        resultDiv.innerHTML = '<div class="success-message">✓ Accessibility features enabled. Try Tab to navigate milestones, Enter/Space to activate.</div>';
+      } catch (error) {
+        resultDiv.innerHTML = `<div class="error-message">Error: ${error.message}</div>`;
+      }
+    };
+  </script>
+</body>
+</html>

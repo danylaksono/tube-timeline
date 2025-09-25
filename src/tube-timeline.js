@@ -9,7 +9,9 @@
         header?: { title?: string, subtitle?: string, logoHref?: string },
         showToday?: boolean,
         onMilestoneClick?: (milestone, track) => void,
-        orientation?: 'auto' | 'horizontal' | 'vertical'
+        orientation?: 'auto' | 'horizontal' | 'vertical',
+        debug?: boolean,
+        accessibility?: boolean
       }
     })
     .render();
@@ -21,43 +23,285 @@
 
 /* eslint-disable no-undef */
 
+// Debug logging utility
+const DEBUG = {
+  enabled: false,
+  log: (...args) => DEBUG.enabled && console.log('[TubeTimeline]', ...args),
+  warn: (...args) => DEBUG.enabled && console.warn('[TubeTimeline]', ...args),
+  error: (...args) => console.error('[TubeTimeline]', ...args)
+};
+
+// Input validation utilities
+const VALIDATORS = {
+  isValidDateString: (str) => {
+    if (typeof str !== 'string') return false;
+    const fullMatch = /^(\d{2})\/(\d{2})\/(\d{4})$/.exec(str);
+    const monthYearMatch = /^(\d{2})\/(\d{4})$/.exec(str);
+    return !!(fullMatch || monthYearMatch);
+  },
+  
+  isValidColor: (color) => {
+    if (typeof color !== 'string') return false;
+    return /^#[0-9A-F]{6}$/i.test(color) || /^#[0-9A-F]{3}$/i.test(color);
+  },
+  
+  isValidMilestoneType: (type) => {
+    const validTypes = ['start', 'end', 'submission', 'notification', 'review', 'abstract', 'invitation', 'cameraReady'];
+    return validTypes.includes(type);
+  },
+  
+  validateTrack: (track, index) => {
+    const errors = [];
+    if (!track || typeof track !== 'object') {
+      errors.push(`Track ${index}: Must be an object`);
+      return errors;
+    }
+    
+    if (!track.track || typeof track.track !== 'string') {
+      errors.push(`Track ${index}: 'track' property is required and must be a string`);
+    }
+    
+    if (!track.color || !VALIDATORS.isValidColor(track.color)) {
+      errors.push(`Track ${index}: 'color' property is required and must be a valid hex color`);
+    }
+    
+    if (!Array.isArray(track.dates)) {
+      errors.push(`Track ${index}: 'dates' property is required and must be an array`);
+    } else {
+      track.dates.forEach((milestone, mIndex) => {
+        if (!milestone || typeof milestone !== 'object') {
+          errors.push(`Track ${index}, Milestone ${mIndex}: Must be an object`);
+          return;
+        }
+        
+        if (!milestone.date || !VALIDATORS.isValidDateString(milestone.date)) {
+          errors.push(`Track ${index}, Milestone ${mIndex}: 'date' property is required and must be in DD/MM/YYYY or MM/YYYY format`);
+        }
+        
+        if (!milestone.name || typeof milestone.name !== 'string') {
+          errors.push(`Track ${index}, Milestone ${mIndex}: 'name' property is required and must be a string`);
+        }
+        
+        if (!milestone.type || !VALIDATORS.isValidMilestoneType(milestone.type)) {
+          errors.push(`Track ${index}, Milestone ${mIndex}: 'type' property is required and must be one of: start, end, submission, notification, review, abstract, invitation, cameraReady`);
+        }
+      });
+    }
+    
+    return errors;
+  }
+};
+
 export class TubeTimeline {
   constructor(cfg) {
-    const { target, data, d3: d3lib, options = {} } = cfg || {};
-    if (!target) throw new Error('TubeTimeline: target is required');
-    if (!data) throw new Error('TubeTimeline: data is required');
-    this.d3 = d3lib || (typeof d3 !== 'undefined' ? d3 : null);
-    if (!this.d3) throw new Error('TubeTimeline: d3 v7 is required (pass via cfg.d3 or include globally)');
-    this.root = typeof target === 'string' ? document.querySelector(target) : target;
-    if (!(this.root instanceof SVGElement)) throw new Error('TubeTimeline: target must be an <svg> element');
-    this.data = JSON.parse(JSON.stringify(data)); // defensive copy
-    this.options = {
-      header: { title: 'Timeline', subtitle: '', logoHref: null, ...(options.header || {}) },
-      showToday: options.showToday !== false,
-      onMilestoneClick: options.onMilestoneClick || ((m) => m.url && window.open(m.url, '_blank')),
-      orientation: options.orientation || 'auto'
-    };
-    this.boundResize = () => this.render();
+    try {
+      // Enable debug logging if requested
+      DEBUG.enabled = cfg?.options?.debug || false;
+      DEBUG.log('Initializing TubeTimeline with config:', cfg);
+
+      const { target, data, d3: d3lib, options = {} } = cfg || {};
+      
+      // Validate required parameters
+      if (!target) {
+        const error = 'TubeTimeline: target is required';
+        DEBUG.error(error);
+        throw new Error(error);
+      }
+      
+      if (!data) {
+        const error = 'TubeTimeline: data is required';
+        DEBUG.error(error);
+        throw new Error(error);
+      }
+
+      // Validate and setup D3
+      this.d3 = d3lib || (typeof d3 !== 'undefined' ? d3 : null);
+      if (!this.d3) {
+        const error = 'TubeTimeline: d3 v7 is required (pass via cfg.d3 or include globally)';
+        DEBUG.error(error);
+        throw new Error(error);
+      }
+
+      // Validate and setup target element
+      this.root = typeof target === 'string' ? document.querySelector(target) : target;
+      if (!this.root) {
+        const error = `TubeTimeline: target element not found (${typeof target === 'string' ? `selector: "${target}"` : 'invalid element'})`;
+        DEBUG.error(error);
+        throw new Error(error);
+      }
+      
+      if (!(this.root instanceof SVGElement)) {
+        const error = 'TubeTimeline: target must be an <svg> element';
+        DEBUG.error(error);
+        throw new Error(error);
+      }
+
+      // Validate data structure
+      this.validateData(data);
+      this.data = JSON.parse(JSON.stringify(data)); // defensive copy
+
+      // Setup options with validation
+      this.options = {
+        header: { 
+          title: 'Timeline', 
+          subtitle: '', 
+          logoHref: null, 
+          ...(options.header || {}) 
+        },
+        showToday: options.showToday !== false,
+        onMilestoneClick: options.onMilestoneClick || ((m) => m.url && window.open(m.url, '_blank')),
+        orientation: this.validateOrientation(options.orientation),
+        debug: options.debug || false,
+        accessibility: options.accessibility !== false
+      };
+
+      // Setup event handlers
+      this.boundResize = () => this.render();
+      this.eventListeners = new Map();
+
+      DEBUG.log('TubeTimeline initialized successfully');
+    } catch (error) {
+      DEBUG.error('Failed to initialize TubeTimeline:', error.message);
+      throw error;
+    }
+  }
+
+  validateData(data) {
+    if (!Array.isArray(data)) {
+      const error = 'TubeTimeline: data must be an array of tracks';
+      DEBUG.error(error);
+      throw new Error(error);
+    }
+
+    if (data.length === 0) {
+      const error = 'TubeTimeline: data array cannot be empty';
+      DEBUG.error(error);
+      throw new Error(error);
+    }
+
+    const allErrors = [];
+    data.forEach((track, index) => {
+      const errors = VALIDATORS.validateTrack(track, index);
+      allErrors.push(...errors);
+    });
+
+    if (allErrors.length > 0) {
+      const error = `TubeTimeline: Data validation failed:\n${allErrors.join('\n')}`;
+      DEBUG.error(error);
+      throw new Error(error);
+    }
+
+    DEBUG.log(`Data validation passed for ${data.length} tracks`);
+  }
+
+  validateOrientation(orientation) {
+    const validOrientations = ['auto', 'horizontal', 'vertical'];
+    if (!orientation || validOrientations.includes(orientation)) {
+      return orientation || 'auto';
+    }
+    
+    DEBUG.warn(`Invalid orientation "${orientation}", using "auto"`);
+    return 'auto';
   }
 
   parseDate(str) {
-    const fullMatch = /^(\d{2})\/(\d{2})\/(\d{4})$/.exec(str);
-    if (fullMatch) return new Date(+fullMatch[3], +fullMatch[2] - 1, +fullMatch[1]);
-    const monthYearMatch = /^(\d{2})\/(\d{4})$/.exec(str);
-    if (monthYearMatch) return new Date(+monthYearMatch[2], +monthYearMatch[1] - 1, 1);
-    return null;
+    try {
+      if (!str || typeof str !== 'string') {
+        DEBUG.warn('parseDate: Invalid input, expected string');
+        return null;
+      }
+
+      const fullMatch = /^(\d{2})\/(\d{2})\/(\d{4})$/.exec(str);
+      if (fullMatch) {
+        const date = new Date(+fullMatch[3], +fullMatch[2] - 1, +fullMatch[1]);
+        if (isNaN(date.getTime())) {
+          DEBUG.warn(`parseDate: Invalid date created from "${str}"`);
+          return null;
+        }
+        return date;
+      }
+      
+      const monthYearMatch = /^(\d{2})\/(\d{4})$/.exec(str);
+      if (monthYearMatch) {
+        const date = new Date(+monthYearMatch[2], +monthYearMatch[1] - 1, 1);
+        if (isNaN(date.getTime())) {
+          DEBUG.warn(`parseDate: Invalid date created from "${str}"`);
+          return null;
+        }
+        return date;
+      }
+      
+      DEBUG.warn(`parseDate: Unrecognized date format "${str}"`);
+      return null;
+    } catch (error) {
+      DEBUG.error('parseDate: Error parsing date:', error.message);
+      return null;
+    }
   }
 
   preprocess() {
-    this.data.forEach(track => track.dates.forEach(d => (d.parsed = this.parseDate(d.date))));
-    this.data.sort((a, b) => {
-      const aStart = a.dates.find(d => d.type === 'start')?.parsed;
-      const bStart = b.dates.find(d => d.type === 'start')?.parsed;
-      return (aStart || new Date(9999, 0, 1)) - (bStart || new Date(9999, 0, 1));
-    });
-    this.allDates = [...new Set(this.data.flatMap(t => t.dates.map(d => d.parsed)))].sort((a, b) => a - b);
-    this.trackNames = this.data.map(d => d.track);
-    this.svg = this.d3.select(this.root);
+    try {
+      DEBUG.log('Preprocessing data...');
+      
+      // Parse all dates and filter out invalid ones
+      this.data.forEach(track => {
+        track.dates.forEach(d => {
+          d.parsed = this.parseDate(d.date);
+          if (!d.parsed) {
+            DEBUG.warn(`Skipping milestone with invalid date: ${d.name} (${d.date})`);
+          }
+        });
+        // Remove milestones with invalid dates
+        track.dates = track.dates.filter(d => d.parsed);
+      });
+
+      // Sort tracks by start date
+      this.data.sort((a, b) => {
+        const aStart = a.dates.find(d => d.type === 'start')?.parsed;
+        const bStart = b.dates.find(d => d.type === 'start')?.parsed;
+        return (aStart || new Date(9999, 0, 1)) - (bStart || new Date(9999, 0, 1));
+      });
+
+      // Collect all valid dates
+      this.allDates = [...new Set(this.data.flatMap(t => t.dates.map(d => d.parsed).filter(d => d)))].sort((a, b) => a - b);
+      
+      if (this.allDates.length === 0) {
+        DEBUG.warn('No valid dates found in data');
+        return;
+      }
+
+      this.trackNames = this.data.map(d => d.track);
+      this.svg = this.d3.select(this.root);
+
+      // Add accessibility attributes
+      if (this.options.accessibility) {
+        this.addAccessibilityAttributes();
+      }
+
+      DEBUG.log(`Preprocessing complete: ${this.data.length} tracks, ${this.allDates.length} unique dates`);
+    } catch (error) {
+      DEBUG.error('Error during preprocessing:', error.message);
+      throw error;
+    }
+  }
+
+  addAccessibilityAttributes() {
+    try {
+      // Add ARIA attributes to the SVG
+      this.svg
+        .attr('role', 'img')
+        .attr('aria-label', `Timeline with ${this.data.length} tracks and ${this.allDates.length} milestones`)
+        .attr('tabindex', '0');
+
+      // Add title element for screen readers
+      this.svg.select('title').remove();
+      this.svg.append('title')
+        .text(`${this.options.header.title || 'Timeline'}: Interactive timeline showing ${this.data.length} parallel tracks`);
+
+      DEBUG.log('Accessibility attributes added');
+    } catch (error) {
+      DEBUG.error('Error adding accessibility attributes:', error.message);
+    }
   }
 
   renderHeader(isHorizontal, scale) {
@@ -169,30 +413,61 @@ export class TubeTimeline {
   removeSvgTooltip(g) { g.selectAll('.svg-tooltip').remove(); }
 
   render() {
-    this.preprocess();
-    const d3 = this.d3;
-    this.svg.selectAll('*').remove();
+    try {
+      DEBUG.log('Starting render...');
+      
+      this.preprocess();
+      
+      if (this.allDates.length === 0) {
+        DEBUG.warn('No valid data to render');
+        this.renderEmptyState();
+        return this;
+      }
 
-    const viewportHeight = this.root.clientHeight;
-    const viewportWidth = this.root.clientWidth;
-    const forced = this.options.orientation;
-    const isHorizontal = forced === 'auto' ? viewportWidth >= viewportHeight : forced === 'horizontal';
-    const isHeightConstrained = viewportHeight < 500;
-    const scale = isHeightConstrained ? Math.max(0.6, viewportHeight / 500) : 1;
-    const baseHeaderHeight = isHorizontal ? 50 : 40;
-    const headerHeight = Math.min(baseHeaderHeight * scale, viewportHeight * 0.12);
-    const margin = {
-      top: Math.min(16 * scale, viewportHeight * 0.03),
-      right: 60 * scale,
-      bottom: Math.min(30 * scale, viewportHeight * 0.06),
-      left: 35 * scale
-    };
+      const d3 = this.d3;
+      
+      // Performance optimization: Use requestAnimationFrame for smooth rendering
+      if (this.renderAnimationFrame) {
+        cancelAnimationFrame(this.renderAnimationFrame);
+      }
+      
+      this.renderAnimationFrame = requestAnimationFrame(() => {
+        this.performRender();
+      });
+      
+      return this;
+    } catch (error) {
+      DEBUG.error('Error during render:', error.message);
+      this.renderErrorState(error);
+      throw error;
+    }
+  }
 
-    this.renderHeader(isHorizontal, scale);
-    const height = this.root.clientHeight - margin.top - margin.bottom - headerHeight;
-    const laneHeight = 15 * scale;
-    const g = this.svg.append('g').attr('transform', `translate(${isHorizontal ? margin.left / 2 : margin.left},${margin.top + headerHeight})`);
-    const width = this.root.clientWidth - (isHorizontal ? margin.right : margin.left + 1.5 * margin.right);
+  performRender() {
+    try {
+      const d3 = this.d3;
+      this.svg.selectAll('*').remove();
+
+      const viewportHeight = this.root.clientHeight;
+      const viewportWidth = this.root.clientWidth;
+      const forced = this.options.orientation;
+      const isHorizontal = forced === 'auto' ? viewportWidth >= viewportHeight : forced === 'horizontal';
+      const isHeightConstrained = viewportHeight < 500;
+      const scale = isHeightConstrained ? Math.max(0.6, viewportHeight / 500) : 1;
+      const baseHeaderHeight = isHorizontal ? 50 : 40;
+      const headerHeight = Math.min(baseHeaderHeight * scale, viewportHeight * 0.12);
+      const margin = {
+        top: Math.min(16 * scale, viewportHeight * 0.03),
+        right: 60 * scale,
+        bottom: Math.min(30 * scale, viewportHeight * 0.06),
+        left: 35 * scale
+      };
+
+      this.renderHeader(isHorizontal, scale);
+      const height = this.root.clientHeight - margin.top - margin.bottom - headerHeight;
+      const laneHeight = 15 * scale;
+      const g = this.svg.append('g').attr('transform', `translate(${isHorizontal ? margin.left / 2 : margin.left},${margin.top + headerHeight})`);
+      const width = this.root.clientWidth - (isHorizontal ? margin.right : margin.left + 1.5 * margin.right);
 
     let xScale, yScale;
     const trackLinesGroup = g.append('g')
@@ -221,62 +496,111 @@ export class TubeTimeline {
         .attr('stroke', d => d.color).attr('stroke-width', laneHeight).attr('stroke-linecap', 'round');
     }
 
-    // Milestones
+    // Milestones with accessibility and performance improvements
     this.data.forEach(track => {
       const pos = isHorizontal
         ? { fixed: yScale(track.track), axis: d => xScale(d.parsed) }
         : { fixed: xScale(track.track), axis: d => yScale(d.parsed) };
-      trackLinesGroup.selectAll()
-        .data(track.dates).enter().append('g')
+      
+      const milestoneGroup = trackLinesGroup.selectAll(`.milestone-group-${track.track.replace(/\s+/g, '-')}`)
+        .data(track.dates)
+        .enter()
+        .append('g')
+        .attr('class', 'milestone-group')
         .attr('transform', d => {
           const x = isHorizontal ? pos.axis(d) : pos.fixed;
           const y = isHorizontal ? pos.fixed : pos.axis(d);
           return `translate(${x},${y})`;
-        })
-        .each(function (d) {
-          if (d.type === 'start' || d.type === 'end') {
-            d3.select(this).append('rect')
-              .attr('x', isHorizontal ? -laneHeight : -laneHeight)
-              .attr('y', isHorizontal ? -laneHeight * 1.5 : -laneHeight * 0.625)
-              .attr('width', isHorizontal ? laneHeight * 1.5 : laneHeight * 2)
-              .attr('height', isHorizontal ? laneHeight * 3 : laneHeight * 1.25)
-              .attr('fill', '#fff').attr('stroke', '#000').attr('stroke-width', 5)
-              .attr('rx', 8).attr('ry', 8);
-          } else {
-            d3.select(this).append('rect')
-              .attr('x', 0).attr('y', isHorizontal ? -laneHeight * 2 : 0)
-              .attr('width', isHorizontal ? laneHeight : laneHeight * 1.5)
-              .attr('height', isHorizontal ? laneHeight * 2 : laneHeight)
-              .attr('fill', track.color).attr('stroke', 'none')
-              .attr('rx', 4).attr('ry', 4);
-          }
-          const labelLines = (d.label || '').split(' ');
-          labelLines.forEach((line, i) => {
-            const labelSpacing = isHeightConstrained ? 12 : 16;
-            const labelYOffset = isHorizontal ? -laneHeight * 2.75 + i * labelSpacing : 5 + i * labelSpacing;
-            const labelXOffset = isHorizontal ? 0 : laneHeight * 2.2;
-            d3.select(this).append('text')
-              .attr('class', 'milestone-label')
-              .attr('text-anchor', 'start')
-              .attr('font-size', isHeightConstrained ? 11 : 15).attr('font-weight', 'bold')
-              .attr('font-family', 'sans-serif').attr('fill', '#222')
-              .attr('x', labelXOffset).attr('y', labelYOffset)
-              .attr('transform', `rotate(-30 ${labelXOffset} ${labelYOffset})`)
-              .text(line);
-          });
-        })
+        });
+
+      // Add accessibility attributes to milestone groups
+      if (this.options.accessibility) {
+        milestoneGroup
+          .attr('role', 'button')
+          .attr('tabindex', '0')
+          .attr('aria-label', d => `${d.name} on ${d.date}`)
+          .attr('aria-describedby', d => `milestone-${track.track.replace(/\s+/g, '-')}-${d.name.replace(/\s+/g, '-')}`);
+      }
+
+      milestoneGroup.each(function (d) {
+        const group = d3.select(this);
+        
+        if (d.type === 'start' || d.type === 'end') {
+          group.append('rect')
+            .attr('x', isHorizontal ? -laneHeight : -laneHeight)
+            .attr('y', isHorizontal ? -laneHeight * 1.5 : -laneHeight * 0.625)
+            .attr('width', isHorizontal ? laneHeight * 1.5 : laneHeight * 2)
+            .attr('height', isHorizontal ? laneHeight * 3 : laneHeight * 1.25)
+            .attr('fill', '#fff').attr('stroke', '#000').attr('stroke-width', 5)
+            .attr('rx', 8).attr('ry', 8);
+        } else {
+          group.append('rect')
+            .attr('x', 0).attr('y', isHorizontal ? -laneHeight * 2 : 0)
+            .attr('width', isHorizontal ? laneHeight : laneHeight * 1.5)
+            .attr('height', isHorizontal ? laneHeight * 2 : laneHeight)
+            .attr('fill', track.color).attr('stroke', 'none')
+            .attr('rx', 4).attr('ry', 4);
+        }
+        
+        const labelLines = (d.label || '').split(' ');
+        labelLines.forEach((line, i) => {
+          const labelSpacing = isHeightConstrained ? 12 : 16;
+          const labelYOffset = isHorizontal ? -laneHeight * 2.75 + i * labelSpacing : 5 + i * labelSpacing;
+          const labelXOffset = isHorizontal ? 0 : laneHeight * 2.2;
+          group.append('text')
+            .attr('class', 'milestone-label')
+            .attr('text-anchor', 'start')
+            .attr('font-size', isHeightConstrained ? 11 : 15).attr('font-weight', 'bold')
+            .attr('font-family', 'sans-serif').attr('fill', '#222')
+            .attr('x', labelXOffset).attr('y', labelYOffset)
+            .attr('transform', `rotate(-30 ${labelXOffset} ${labelYOffset})`)
+            .text(line);
+        });
+      });
+
+      // Add event handlers with better error handling
+      milestoneGroup
         .on('mouseover', (event, d) => {
-          const coords = event.currentTarget.getAttribute('transform').match(/translate\(([^,]+),([^)]+)\)/);
-          const x = +coords[1], y = +coords[2];
-          this.showSvgTooltip(g, x, y, `<strong>${d.name}</strong><br>${d.date}`, isHorizontal);
+          try {
+            const coords = event.currentTarget.getAttribute('transform').match(/translate\(([^,]+),([^)]+)\)/);
+            if (coords) {
+              const x = +coords[1], y = +coords[2];
+              this.showSvgTooltip(g, x, y, `<strong>${d.name}</strong><br>${d.date}`, isHorizontal);
+            }
+          } catch (error) {
+            DEBUG.error('Error in mouseover handler:', error.message);
+          }
         })
         .on('mousemove', (event, d) => {
-          const coords = event.currentTarget.getAttribute('transform').match(/translate\(([^,]+),([^)]+)\)/);
-          const x = +coords[1], y = +coords[2];
-          this.showSvgTooltip(g, x, y, `<strong>${d.name}</strong><br>${d.date}`, isHorizontal);
+          try {
+            const coords = event.currentTarget.getAttribute('transform').match(/translate\(([^,]+),([^)]+)\)/);
+            if (coords) {
+              const x = +coords[1], y = +coords[2];
+              this.showSvgTooltip(g, x, y, `<strong>${d.name}</strong><br>${d.date}`, isHorizontal);
+            }
+          } catch (error) {
+            DEBUG.error('Error in mousemove handler:', error.message);
+          }
         })
         .on('mouseout', () => this.removeSvgTooltip(g))
-        .on('click', (_, d) => this.options.onMilestoneClick(d, track));
+        .on('click', (event, d) => {
+          try {
+            event.preventDefault();
+            this.options.onMilestoneClick(d, track);
+          } catch (error) {
+            DEBUG.error('Error in click handler:', error.message);
+          }
+        })
+        .on('keydown', (event, d) => {
+          try {
+            if (event.key === 'Enter' || event.key === ' ') {
+              event.preventDefault();
+              this.options.onMilestoneClick(d, track);
+            }
+          } catch (error) {
+            DEBUG.error('Error in keydown handler:', error.message);
+          }
+        });
     });
 
     // Month ticks/labels
@@ -349,14 +673,137 @@ export class TubeTimeline {
     g.selectAll('g').raise();
 
     // Listen for resize for responsive redraw
-    window.removeEventListener('resize', this.boundResize);
-    window.addEventListener('resize', this.boundResize);
+    this.setupResizeListener();
+    
+    DEBUG.log('Render completed successfully');
     return this;
+    } catch (error) {
+      DEBUG.error('Error during performRender:', error.message);
+      this.renderErrorState(error);
+      throw error;
+    }
+  }
+
+  setupResizeListener() {
+    // Clean up existing listeners to prevent memory leaks
+    this.cleanupEventListeners();
+    
+    // Add resize listener with throttling for performance
+    let resizeTimeout;
+    const throttledResize = () => {
+      clearTimeout(resizeTimeout);
+      resizeTimeout = setTimeout(() => {
+        try {
+          this.render();
+        } catch (error) {
+          DEBUG.error('Error during resize render:', error.message);
+        }
+      }, 100);
+    };
+    
+    window.addEventListener('resize', throttledResize);
+    this.eventListeners.set('resize', throttledResize);
+  }
+
+  cleanupEventListeners() {
+    this.eventListeners.forEach((handler, event) => {
+      window.removeEventListener(event, handler);
+    });
+    this.eventListeners.clear();
+  }
+
+  renderEmptyState() {
+    try {
+      this.svg.selectAll('*').remove();
+      
+      const centerX = this.root.clientWidth / 2;
+      const centerY = this.root.clientHeight / 2;
+      
+      this.svg.append('text')
+        .attr('x', centerX)
+        .attr('y', centerY - 20)
+        .attr('text-anchor', 'middle')
+        .attr('font-size', '18px')
+        .attr('font-family', 'sans-serif')
+        .attr('fill', '#666')
+        .text('No Timeline Data');
+        
+      this.svg.append('text')
+        .attr('x', centerX)
+        .attr('y', centerY + 10)
+        .attr('text-anchor', 'middle')
+        .attr('font-size', '14px')
+        .attr('font-family', 'sans-serif')
+        .attr('fill', '#999')
+        .text('Please provide valid timeline data');
+        
+      DEBUG.log('Empty state rendered');
+    } catch (error) {
+      DEBUG.error('Error rendering empty state:', error.message);
+    }
+  }
+
+  renderErrorState(error) {
+    try {
+      this.svg.selectAll('*').remove();
+      
+      const centerX = this.root.clientWidth / 2;
+      const centerY = this.root.clientHeight / 2;
+      
+      this.svg.append('text')
+        .attr('x', centerX)
+        .attr('y', centerY - 20)
+        .attr('text-anchor', 'middle')
+        .attr('font-size', '18px')
+        .attr('font-family', 'sans-serif')
+        .attr('fill', '#e74c3c')
+        .text('Timeline Error');
+        
+      this.svg.append('text')
+        .attr('x', centerX)
+        .attr('y', centerY + 10)
+        .attr('text-anchor', 'middle')
+        .attr('font-size', '14px')
+        .attr('font-family', 'sans-serif')
+        .attr('fill', '#666')
+        .text(error.message || 'An error occurred while rendering the timeline');
+        
+      DEBUG.log('Error state rendered');
+    } catch (renderError) {
+      DEBUG.error('Error rendering error state:', renderError.message);
+    }
   }
 
   destroy() {
-    if (this.svg) this.svg.selectAll('*').remove();
-    window.removeEventListener('resize', this.boundResize);
+    try {
+      DEBUG.log('Destroying TubeTimeline...');
+      
+      // Cancel any pending animation frames
+      if (this.renderAnimationFrame) {
+        cancelAnimationFrame(this.renderAnimationFrame);
+        this.renderAnimationFrame = null;
+      }
+      
+      // Clean up event listeners
+      this.cleanupEventListeners();
+      
+      // Clear SVG content
+      if (this.svg) {
+        this.svg.selectAll('*').remove();
+      }
+      
+      // Clear references
+      this.data = null;
+      this.allDates = null;
+      this.trackNames = null;
+      this.svg = null;
+      this.root = null;
+      this.d3 = null;
+      
+      DEBUG.log('TubeTimeline destroyed successfully');
+    } catch (error) {
+      DEBUG.error('Error during destroy:', error.message);
+    }
   }
 }
 

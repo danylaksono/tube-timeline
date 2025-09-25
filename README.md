@@ -93,6 +93,7 @@ A comprehensive example showing a software product development lifecycle with mu
 
 ### EuroVIS 2026 Conference Timeline
 
+
 The original academic conference example featuring multiple submission tracks:
 
 - Full Papers, Short Papers, State of the Art Reports
@@ -177,14 +178,48 @@ const data = [
 ```
 tube-timeline/
 ├── src/
+
 │   └── tube-timeline.js          # Main library
+
+
+
 ├── examples/
 │   ├── data/
+
+
 │   │   ├── product-launch.json   # Product launch data
+
+
+
 │   │   └── eurovis-2026.json     # Conference data
+
+
+
+
+
 │   ├── product-launch.html       # Product launch example
+
+
+
+
+
 │   └── eurovis-2026.html         # Conference example
+
+
+
+
+
+
 ├── index.html                    # Main demo page
+
+
+
+
+
+
+
+
+
 ├── package.json
 └── README.md
 ```
@@ -193,6 +228,16 @@ tube-timeline/
 
 - [D3.js v7](https://d3js.org/d3.v7.min.js) for rendering SVG elements and scales
 
+
+
+
+
+
+
+
+
+
+
 ## License
 
 This project is released under the MIT License.
@@ -200,7 +245,17 @@ This project is released under the MIT License.
 ## Author
 
 [![velitchko's github](https://github.com/velitchko.png?size=40)](https://github.com/velitchko)  
-[@velitchko](https://github.com/velitchko)
+
+
+
+
+
+
+[![danylaksono's github](https://github.com/danylaksono.png?size=40)](https://github.com/danylaksono)  
+
 
 Feel free to reach out or follow for updates!
+
+
+
 

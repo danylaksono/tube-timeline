@@ -2,6 +2,8 @@
 
 London tube style configurable timeline renderer powered by D3 v7. Ships as a tiny ES module you can use directly in the browser or bundle in your app.
 
+![](./timeline.png)
+
 This work is heavily inspired by https://velitchko.github.io/eurovis-timeline/, for the EuroVIS 2026.
 
 ### Install

@@ -1,3 +1,73 @@
+## tube-timeline
+
+London tube style configurable timeline renderer powered by D3 v7. Ships as a tiny ES module you can use directly in the browser or bundle in your app.
+
+### Install
+
+Use via script module directly (no build step):
+
+```html
+<script type="module">
+  import { TubeTimeline } from './src/tube-timeline.js';
+  // ... see Usage below
+  new TubeTimeline({ target: document.querySelector('svg'), data }).render();
+  // d3 v7 must be present globally or passed in via cfg.d3
+</script>
+```
+
+If publishing to npm, consumers can `npm i tube-timeline` and:
+
+```js
+import { TubeTimeline } from 'tube-timeline';
+```
+
+### Data shape
+
+```ts
+type MilestoneType = 'start'|'end'|'submission'|'notification'|'review'|'abstract'|'invitation'|'cameraReady';
+type Milestone = { date: string; name: string; type: MilestoneType; url?: string; label?: string };
+type Track = { track: string; label?: string; color: string; dates: Milestone[] };
+```
+
+Dates accept `DD/MM/YYYY` or `MM/YYYY`.
+
+### Usage
+
+```js
+import { TubeTimeline } from './src/tube-timeline.js';
+import * as d3 from 'https://cdn.skypack.dev/d3@7'; // or global <script src="https://d3js.org/d3.v7.min.js"></script>
+
+const timeline = new TubeTimeline({
+  target: document.querySelector('svg'),
+  data,
+  d3,
+  options: {
+    header: { title: 'My Timeline', subtitle: 'Deadlines', logoHref: 'logo.png' },
+    showToday: true,
+    orientation: 'auto' // 'horizontal' | 'vertical' | 'auto'
+  }
+});
+timeline.render();
+```
+
+### API
+
+- `new TubeTimeline(config)`
+  - **target**: SVG element or selector
+  - **data**: array of tracks (see Data shape)
+  - **d3**: optional d3 instance; if omitted, uses global `d3`
+  - **options.header**: `{ title, subtitle, logoHref }`
+  - **options.showToday**: show the Today marker (default true)
+  - **options.orientation**: `'auto' | 'horizontal' | 'vertical'`
+  - **options.onMilestoneClick**: handler `(milestone, track)`; default opens `milestone.url` if present
+
+- `render()` Re-renders responsively; reattaches resize listener
+- `destroy()` Clears SVG and removes listeners
+
+### Demo
+
+Open `index.html` in a static server. The page imports the module and renders the EuroVis example.
+
 # EuroVis 2026 Conference Interactive Timeline
 
 This is an **interactive visual timeline** for the EuroVis 2026 conference deadlines and tracks. It displays multiple conference tracks with their key milestones, deadlines, and notifications in a clear, color-coded timeline view.

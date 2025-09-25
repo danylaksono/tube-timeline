@@ -1,0 +1,20 @@
+{
+  "name": "tube-timeline",
+  "version": "0.1.0",
+  "description": "London tube style configurable timeline renderer (D3 v7)",
+  "type": "module",
+  "main": "src/tube-timeline.js",
+  "module": "src/tube-timeline.js",
+  "exports": {
+    ".": "./src/tube-timeline.js"
+  },
+  "keywords": ["timeline", "d3", "london", "tube", "subway"],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {},
+  "peerDependencies": {
+    "d3": ">=7 <8"
+  }
+}
+
+

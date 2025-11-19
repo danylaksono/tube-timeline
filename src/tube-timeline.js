@@ -35,28 +35,42 @@ export class TubeTimeline {
       header: { title: 'Timeline', subtitle: '', logoHref: null, ...(options.header || {}) },
       showToday: options.showToday !== false,
       onMilestoneClick: options.onMilestoneClick || ((m) => m.url && window.open(m.url, '_blank')),
+      onMilestoneDrag: options.onMilestoneDrag || null,
       orientation: options.orientation || 'auto'
     };
     this.boundResize = () => this.render();
     this.activeTrack = null;
+    this.xScale = null;
+    this.yScale = null;
+    this.isHorizontal = null;
   }
 
   parseDate(str) {
-    const fullMatch = /^(\d{2})\/(\d{2})\/(\d{4})$/.exec(str);
+    if (!str && str !== 0) return null;
+    if (str instanceof Date) return str;
+    // DD/MM/YYYY
+    const fullMatch = /^(\d{2})\/(\d{2})\/(\d{4})$/.exec(String(str).trim());
     if (fullMatch) return new Date(+fullMatch[3], +fullMatch[2] - 1, +fullMatch[1]);
-    const monthYearMatch = /^(\d{2})\/(\d{4})$/.exec(str);
+    // MM/YYYY
+    const monthYearMatch = /^(\d{2})\/(\d{4})$/.exec(String(str).trim());
     if (monthYearMatch) return new Date(+monthYearMatch[2], +monthYearMatch[1] - 1, 1);
+    // ISO YYYY-MM-DD
+    const isoMatch = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(str).trim());
+    if (isoMatch) return new Date(+isoMatch[1], +isoMatch[2] - 1, +isoMatch[3]);
+    // Fallback: try Date.parse for other formats
+    const parsed = Date.parse(str);
+    if (!isNaN(parsed)) return new Date(parsed);
     return null;
   }
 
   preprocess() {
     this.data.forEach(track => track.dates.forEach(d => (d.parsed = this.parseDate(d.date))));
     this.data.sort((a, b) => {
-      const aStart = a.dates.find(d => d.type === 'start')?.parsed;
-      const bStart = b.dates.find(d => d.type === 'start')?.parsed;
+      const aStart = a.dates.find(d => d.type === 'start' && d.parsed)?.parsed || a.dates.find(d => d.parsed)?.parsed;
+      const bStart = b.dates.find(d => d.type === 'start' && d.parsed)?.parsed || b.dates.find(d => d.parsed)?.parsed;
       return (aStart || new Date(9999, 0, 1)) - (bStart || new Date(9999, 0, 1));
     });
-    this.allDates = [...new Set(this.data.flatMap(t => t.dates.map(d => d.parsed)))].sort((a, b) => a - b);
+    this.allDates = [...new Set(this.data.flatMap(t => t.dates.map(d => d.parsed).filter(Boolean)))].sort((a, b) => a - b);
     this.trackNames = this.data.map(d => d.track);
     this.svg = this.d3.select(this.root);
   }
@@ -197,20 +211,116 @@ export class TubeTimeline {
     const scale = isHeightConstrained ? Math.max(0.6, viewportHeight / 500) : 1;
     const baseHeaderHeight = isHorizontal ? 50 : 40;
     const headerHeight = Math.min(baseHeaderHeight * scale, viewportHeight * 0.12);
+    
+    // Calculate maximum label extent to account for rotated labels in both orientations
+    // Use a reliable estimation method that works in all contexts
+    let maxLabelExtentRight = 0; // Extent to the right (for horizontal and vertical)
+    let maxLabelExtentBottom = 0; // Extent downward (for vertical mode labels)
+    
+    const labelFontSize = isHeightConstrained ? 11 : 15;
+    // Estimate character width (approximate for bold text)
+    const charWidth = labelFontSize * 0.65;
+    const textHeight = labelFontSize * 1.2;
+    const rotationRad = 30 * Math.PI / 180;
+    
+    // Find the longest label line across all milestones
+    this.data.forEach(track => {
+      track.dates.forEach(d => {
+        if (d.label) {
+          const labelLines = d.label.split(' ');
+          labelLines.forEach(line => {
+            if (line.trim()) {
+              const textWidth = line.length * charWidth;
+              // For -30° rotation, calculate extents
+              // Horizontal component (to the right) = width * cos(30°) + height * sin(30°)
+              // Vertical component (downward) = width * sin(30°) + height * cos(30°)
+              const rotatedExtentRight = textWidth * Math.cos(rotationRad) + textHeight * Math.sin(rotationRad);
+              const rotatedExtentBottom = textWidth * Math.sin(rotationRad) + textHeight * Math.cos(rotationRad);
+              maxLabelExtentRight = Math.max(maxLabelExtentRight, rotatedExtentRight);
+              maxLabelExtentBottom = Math.max(maxLabelExtentBottom, rotatedExtentBottom);
+            }
+          });
+        }
+      });
+    });
+    
+    // Calculate base margins first
+    const baseLeftMargin = 35 * scale;
+    const baseRightMargin = 60 * scale;
+    const baseTopMargin = Math.min(16 * scale, viewportHeight * 0.03);
+    const baseBottomMargin = Math.min(30 * scale, viewportHeight * 0.06);
+    
+    const safetyPadding = 20 * scale;
+    
+    // For horizontal timelines: labels extend to the right from milestone positions
+    // The group is offset by margin.left/2, and labels extend maxLabelExtentRight to the right
+    // from milestone positions. The rightmost milestone is at position 'width' in group coords,
+    // which is at margin.left/2 + width = margin.left/2 + (clientWidth - margin.right) in SVG coords.
+    // To prevent clipping: margin.left/2 + (clientWidth - margin.right) + maxLabelExtentRight <= clientWidth
+    // This simplifies to: margin.right >= margin.left/2 + maxLabelExtentRight
+    const requiredRightMargin = isHorizontal 
+      ? Math.max(baseRightMargin, baseLeftMargin / 2 + maxLabelExtentRight + safetyPadding)
+      : baseRightMargin;
+    
+    // For vertical timelines: labels extend to the right from milestone positions
+    // Milestones are positioned along tracks (xScale), which ranges from [16, width - 16]
+    // Labels are offset by laneHeight * 2.2 to the right from milestone positions
+    // The rightmost track is at position 'width - 16' in group coords
+    // Labels extend maxLabelExtentRight further to the right
+    // Total rightward extent from rightmost track: (width - 16) + laneHeight * 2.2 + maxLabelExtentRight
+    // In SVG coords (group offset by margin.left): margin.left + (width - 16) + laneHeight * 2.2 + maxLabelExtentRight
+    // We need: margin.left + (width - 16) + laneHeight * 2.2 + maxLabelExtentRight <= clientWidth
+    // Since width = clientWidth - margin.left - 1.5 * margin.right (for vertical):
+    // margin.left + (clientWidth - margin.left - 1.5 * margin.right - 16) + laneHeight * 2.2 + maxLabelExtentRight <= clientWidth
+    // Simplifies to: -1.5 * margin.right + laneHeight * 2.2 + maxLabelExtentRight - 16 <= 0
+    // So: margin.right >= (laneHeight * 2.2 + maxLabelExtentRight - 16 + safetyPadding) / 1.5
+    const laneHeight = 15 * scale;
+    const labelXOffset = laneHeight * 2.2;
+    const verticalLabelExtent = labelXOffset + maxLabelExtentRight + safetyPadding;
+    const requiredRightMarginVertical = !isHorizontal
+      ? Math.max(baseRightMargin, (verticalLabelExtent - 16) / 1.5)
+      : 0;
+    
+    // For vertical mode, also check if labels extend beyond bottom
+    // The bottommost milestone is at position height * 0.95 in group coords
+    // Labels are offset downward (labelYOffset = 5 + i * labelSpacing) and rotated
+    // The maximum downward extent is maxLabelExtentBottom
+    // In SVG coords: margin.top + headerHeight + (height * 0.95) + maxLabelExtentBottom
+    // We need this to be <= clientHeight, but since height already accounts for margins,
+    // we just need to ensure bottom margin accounts for label extent
+    const requiredBottomMarginVertical = !isHorizontal
+      ? Math.max(baseBottomMargin, maxLabelExtentBottom + safetyPadding)
+      : 0;
+    
+    // For vertical mode, check if the "Today" flag extends beyond left boundary
+    // The flag is positioned at fx = -baseFlagWidth - 6 in group coords
+    // In SVG coords (group offset by margin.left): margin.left - baseFlagWidth - 6
+    // We need: margin.left - baseFlagWidth - 6 >= 0, so margin.left >= baseFlagWidth + 6
+    // Calculate flag dimensions (same as in render code)
+    const baseFlagWidth = !isHorizontal 
+      ? Math.max(48, Math.min(80, viewportWidth * 0.045))
+      : 0;
+    const requiredLeftMarginVertical = !isHorizontal
+      ? Math.max(baseLeftMargin, baseFlagWidth + 6 + safetyPadding)
+      : 0;
+    
     const margin = {
-      top: Math.min(16 * scale, viewportHeight * 0.03),
-      right: 60 * scale,
-      bottom: Math.min(30 * scale, viewportHeight * 0.06),
-      left: 35 * scale
+      top: baseTopMargin,
+      right: isHorizontal ? requiredRightMargin : Math.max(baseRightMargin, requiredRightMarginVertical),
+      bottom: isHorizontal ? baseBottomMargin : Math.max(baseBottomMargin, requiredBottomMarginVertical),
+      left: isHorizontal ? baseLeftMargin : Math.max(baseLeftMargin, requiredLeftMarginVertical)
     };
 
     this.renderHeader(isHorizontal, scale);
     const height = this.root.clientHeight - margin.top - margin.bottom - headerHeight;
-    const laneHeight = 15 * scale;
     const g = this.svg.append('g').attr('transform', `translate(${isHorizontal ? margin.left / 2 : margin.left},${margin.top + headerHeight})`);
     const width = this.root.clientWidth - (isHorizontal ? margin.right : margin.left + 1.5 * margin.right);
 
     let xScale, yScale;
+    // Store scales and orientation for drag handlers
+    this.xScale = null;
+    this.yScale = null;
+    this.isHorizontal = isHorizontal;
     const trackLinesGroup = g.append('g')
       .attr('class', 'track-lines-group')
       .attr('transform', isHorizontal ? 'translate(0, 60)' : 'translate(0, 0)');
@@ -218,26 +328,43 @@ export class TubeTimeline {
     if (isHorizontal) {
       xScale = d3.scaleTime().domain(d3.extent(this.allDates)).range([margin.left, width]);
       yScale = d3.scalePoint().domain(this.trackNames).range([20, height - height * 0.15]).padding(0.1);
+      this.xScale = xScale;
+      this.yScale = yScale;
       trackLinesGroup.selectAll('.track-line')
         .data(this.data).enter().append('line')
         .attr('class', 'track-line')
-        .attr('x1', d => xScale(d.dates.find(date => date.type === 'start')?.parsed || d.dates[0].parsed))
-        .attr('x2', d => xScale(d.dates.find(date => date.type === 'end')?.parsed || d.dates[d.dates.length - 1].parsed))
+        .attr('x1', d => {
+          const start = (d.dates.find(date => date.type === 'start' && date.parsed)?.parsed) || (d.dates.find(date => date.parsed)?.parsed) || this.allDates[0];
+          return xScale(start);
+        })
+        .attr('x2', d => {
+          const end = (d.dates.find(date => date.type === 'end' && date.parsed)?.parsed) || (d.dates.slice().reverse().find(date => date.parsed)?.parsed) || this.allDates[this.allDates.length - 1];
+          return xScale(end);
+        })
         .attr('y1', d => yScale(d.track)).attr('y2', d => yScale(d.track))
         .attr('stroke', d => d.color).attr('stroke-width', laneHeight).attr('stroke-linecap', 'round');
     } else {
       xScale = d3.scalePoint().domain(this.trackNames).range([16, width - 16]).padding(0);
       yScale = d3.scaleTime().domain(d3.extent(this.allDates)).range([height * 0.05, height * 0.95]);
+      this.xScale = xScale;
+      this.yScale = yScale;
       trackLinesGroup.selectAll('.track-line')
         .data(this.data).enter().append('line')
         .attr('class', 'track-line')
-        .attr('y1', d => yScale(d.dates.find(date => date.type === 'start')?.parsed || d.dates[0].parsed))
-        .attr('y2', d => yScale(d.dates.find(date => date.type === 'end')?.parsed || d.dates[d.dates.length - 1].parsed))
+        .attr('y1', d => {
+          const start = (d.dates.find(date => date.type === 'start' && date.parsed)?.parsed) || (d.dates.find(date => date.parsed)?.parsed) || this.allDates[0];
+          return yScale(start);
+        })
+        .attr('y2', d => {
+          const end = (d.dates.find(date => date.type === 'end' && date.parsed)?.parsed) || (d.dates.slice().reverse().find(date => date.parsed)?.parsed) || this.allDates[this.allDates.length - 1];
+          return yScale(end);
+        })
         .attr('x1', d => xScale(d.track)).attr('x2', d => xScale(d.track))
         .attr('stroke', d => d.color).attr('stroke-width', laneHeight).attr('stroke-linecap', 'round');
     }
 
     // Milestones
+    const timelineInstance = this; // Capture instance for use in callbacks
     this.data.forEach(track => {
       const pos = isHorizontal
         ? { fixed: yScale(track.track), axis: d => xScale(d.parsed) }
@@ -247,7 +374,7 @@ export class TubeTimeline {
       const opacity = isDimmed ? 0.2 : 1; // dimmed tracks show at 20% opacity
 
       trackLinesGroup.selectAll()
-        .data(track.dates).enter().append('g')
+        .data(track.dates.filter(d => d.parsed)).enter().append('g')
         .attr('class', 'milestone-group')
         .attr('transform', d => {
           const x = isHorizontal ? pos.axis(d) : pos.fixed;
@@ -256,14 +383,72 @@ export class TubeTimeline {
         })
         .attr('opacity', opacity)
         .each(function (d) {
+          const milestoneGroup = d3.select(this);
           if (d.type === 'start' || d.type === 'end') {
-            d3.select(this).append('rect')
+            const handleRect = milestoneGroup.append('rect')
               .attr('x', isHorizontal ? -laneHeight : -laneHeight)
               .attr('y', isHorizontal ? -laneHeight * 1.5 : -laneHeight * 0.625)
               .attr('width', isHorizontal ? laneHeight * 1.5 : laneHeight * 2)
               .attr('height', isHorizontal ? laneHeight * 3 : laneHeight * 1.25)
               .attr('fill', '#fff').attr('stroke', '#000').attr('stroke-width', 5)
               .attr('rx', 8).attr('ry', 8);
+            
+            // Add drag functionality if callback is provided
+            if (timelineInstance.options?.onMilestoneDrag) {
+              handleRect
+                .attr('cursor', 'grab')
+                .style('cursor', 'grab');
+              
+              let draggedDate = null; // Store the final date
+              const drag = d3.drag()
+                .on('start', function(event) {
+                  d3.select(this).style('cursor', 'grabbing');
+                  draggedDate = null;
+                })
+                .on('drag', function(event) {
+                  // Get pointer coordinates relative to the g element (which contains the scales)
+                  const [pointerX, pointerY] = d3.pointer(event, g.node());
+                  
+                  let newDate;
+                  if (isHorizontal) {
+                    // Constrain to horizontal axis (track position)
+                    newDate = xScale.invert(pointerX);
+                  } else {
+                    // Constrain to vertical axis (track position)
+                    newDate = yScale.invert(pointerY);
+                  }
+                  
+                  // Clamp to domain
+                  const domain = isHorizontal ? xScale.domain() : yScale.domain();
+                  if (newDate < domain[0]) newDate = domain[0];
+                  if (newDate > domain[1]) newDate = domain[1];
+                  
+                  // Store the date for the end callback
+                  draggedDate = newDate;
+                  
+                  // Update position visually (no re-render during drag)
+                  const newX = isHorizontal ? xScale(newDate) : pos.fixed;
+                  const newY = isHorizontal ? pos.fixed : yScale(newDate);
+                  milestoneGroup.attr('transform', `translate(${newX},${newY})`);
+                })
+                .on('end', function(event) {
+                  d3.select(this).style('cursor', 'grab');
+                  
+                  // Call callback only on drag end to update data model
+                  if (draggedDate !== null && timelineInstance.options.onMilestoneDrag) {
+                    const fmtDate = (date) => {
+                      const d = new Date(date);
+                      const day = String(d.getDate()).padStart(2, '0');
+                      const month = String(d.getMonth() + 1).padStart(2, '0');
+                      const year = d.getFullYear();
+                      return `${day}/${month}/${year}`;
+                    };
+                    timelineInstance.options.onMilestoneDrag(d, track, fmtDate(draggedDate));
+                  }
+                });
+              
+              handleRect.call(drag);
+            }
           } else {
             d3.select(this).append('rect')
               .attr('x', 0).attr('y', isHorizontal ? -laneHeight * 2 : 0)
@@ -307,10 +492,13 @@ export class TubeTimeline {
     }
 
     // Month ticks/labels
-    const months = this.d3.timeMonths(
-      this.d3.timeMonth.ceil(this.allDates[0]),
-      this.d3.timeMonth.offset(this.d3.timeMonth.ceil(this.allDates[this.allDates.length - 1]), 1)
-    );
+    let months = [];
+    if (this.allDates.length) {
+      months = this.d3.timeMonths(
+        this.d3.timeMonth.ceil(this.allDates[0]),
+        this.d3.timeMonth.offset(this.d3.timeMonth.ceil(this.allDates[this.allDates.length - 1]), 1)
+      );
+    }
     if (isHorizontal) {
       g.selectAll('.month-tick').data(months).enter().append('line')
         .attr('class', 'month-tick')
@@ -335,16 +523,21 @@ export class TubeTimeline {
         .attr('fill', '#bbb').text(d => this.d3.timeFormat('%b')(d));
     }
 
-    if (this.options.showToday) {
+    if (this.options.showToday && this.allDates.length) {
       const today = new Date();
       if (today >= this.allDates[0] && today <= this.allDates[this.allDates.length - 1]) {
         const linePos = isHorizontal ? xScale(today) : yScale(today);
+        // compute explicit endpoints
+        let x1, x2, y1, y2;
+        if (isHorizontal) {
+          x1 = linePos; x2 = linePos; y1 = 45; y2 = height;
+        } else {
+          y1 = linePos; y2 = linePos; x1 = 0; x2 = width;
+        }
         g.append('line')
           .attr('class', 'today-line')
-          .attr(isHorizontal ? 'x1' : 'y1', linePos)
-          .attr(isHorizontal ? 'x2' : 'y2', linePos)
-          .attr(isHorizontal ? 'y1' : 'x1', isHorizontal ? 45 : 0)
-          .attr(isHorizontal ? 'y2' : 'x2', isHorizontal ? height : width);
+          .attr('x1', x1).attr('x2', x2).attr('y1', y1).attr('y2', y2)
+          .attr('stroke', '#e74c3c').attr('stroke-width', 2).attr('stroke-dasharray', '4 2');
 
         const baseFlagWidth = Math.max(48, Math.min(80, this.root.clientWidth * 0.045));
         const baseFlagHeight = Math.max(20, Math.min(32, this.root.clientHeight * 0.025));
@@ -356,21 +549,35 @@ export class TubeTimeline {
             .attr('points', `${flagX},${flagY} ${flagX + baseFlagWidth},${flagY + baseFlagHeight / 2} ${flagX},${flagY + baseFlagHeight}`)
             .attr('fill', '#e74c3c').attr('stroke', '#b03a2e').attr('stroke-width', 2);
           flagGroup.append('text')
-            .attr('x', flagX + 20)
-            .attr('y', flagY + 15)
+            .attr('x', flagX + baseFlagWidth / 2)
+            .attr('y', flagY + baseFlagHeight / 2 + 2)
             .attr('font-size', 13)
             .attr('font-family', 'sans-serif')
             .attr('fill', '#fff')
             .attr('font-weight', 'bold')
             .attr('text-anchor', 'middle')
             .attr('alignment-baseline', 'middle')
-            .style('paint-order', 'stroke')
-            .style('stroke', '#b03a2e')
-            .style('stroke-width', '1px')
+            .text('Today');
+        } else {
+          // vertical: draw a left-side flag
+          const fx = -baseFlagWidth - 6;
+          flagGroup.append('rect')
+            .attr('x', fx).attr('y', flagY - baseFlagHeight / 2)
+            .attr('width', baseFlagWidth).attr('height', baseFlagHeight)
+            .attr('rx', 4).attr('fill', '#e74c3c').attr('stroke', '#b03a2e').attr('stroke-width', 2);
+          flagGroup.append('text')
+            .attr('x', fx + baseFlagWidth / 2)
+            .attr('y', flagY + 2)
+            .attr('font-size', 12)
+            .attr('font-family', 'sans-serif')
+            .attr('fill', '#fff')
+            .attr('font-weight', 'bold')
+            .attr('text-anchor', 'middle')
+            .attr('alignment-baseline', 'middle')
             .text('Today');
         }
       }
-      g.selectAll('.today-line').lower();
+      g.selectAll('.today-line').raise();
     }
     g.selectAll('.track-line').raise();
     g.selectAll('g').raise();

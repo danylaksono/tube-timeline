@@ -2,15 +2,19 @@ import { TubeTimeline } from './tube-timeline.js';
 
 export class TimelineBuilder {
     constructor() {
+        // Use dates relative to today for an easier starting point
+        const today = new Date();
+        const fmt = (d) => `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`;
+        const plus = (days) => { const n = new Date(today); n.setDate(n.getDate() + days); return n; };
         this.data = [
             {
                 track: 'Project Alpha',
                 label: 'PA',
                 color: '#E32017',
                 dates: [
-                    { date: '01/01/2024', name: 'Kickoff', type: 'start', label: 'Start' },
-                    { date: '15/02/2024', name: 'Design Review', type: 'review', label: 'Review' },
-                    { date: '01/04/2024', name: 'Launch', type: 'end', label: 'Launch' }
+                    { date: fmt(today), name: 'Kickoff', type: 'start', label: 'Start' },
+                    { date: fmt(plus(30)), name: 'Design Review', type: 'review', label: 'Review' },
+                    { date: fmt(plus(90)), name: 'Launch', type: 'end', label: 'Launch' }
                 ]
             }
         ];
@@ -27,6 +31,49 @@ export class TimelineBuilder {
         this.renderEditor();
         this.updatePreview();
         this.attachGlobalListeners();
+    }
+
+    // Utilities for date parsing/formatting between UI and data format
+    isFullDateString(str) {
+        return /^\d{2}\/\d{2}\/\d{4}$/.test(str);
+    }
+    isMonthYearString(str) {
+        return /^\d{2}\/\d{4}$/.test(str);
+    }
+    // Convert DD/MM/YYYY or MM/YYYY => native input value
+    dataDateToInputValue(str) {
+        if (!str) return '';
+        if (this.isFullDateString(str)) {
+            const [d, m, y] = str.split('/');
+            return `${y}-${m}-${d}`; // YYYY-MM-DD
+        }
+        if (this.isMonthYearString(str)) {
+            const [m, y] = str.split('/');
+            return `${y}-${m}`; // YYYY-MM for <input type="month">
+        }
+        // fallback: try parse as full date via TubeTimeline's parser
+        try {
+            const parts = str.split('/');
+            if (parts.length === 3) {
+                const [d, m, y] = parts; return `${y}-${m}-${d}`;
+            }
+        } catch (e) { }
+        return '';
+    }
+    // Convert native date input value => data string
+    inputValueToDataDate(value, type) {
+        if (!value) return '';
+        if (type === 'date') {
+            // YYYY-MM-DD => DD/MM/YYYY
+            const [y, m, d] = value.split('-');
+            return `${d.padStart(2, '0')}/${m.padStart(2, '0')}/${y}`;
+        }
+        if (type === 'month') {
+            // YYYY-MM => MM/YYYY
+            const [y, m] = value.split('-');
+            return `${m.padStart(2, '0')}/${y}`;
+        }
+        return value;
     }
 
     attachGlobalListeners() {
@@ -68,7 +115,30 @@ export class TimelineBuilder {
             this.timeline = new TubeTimeline({
                 target: svg,
                 data: this.data,
-                options: this.options,
+                options: {
+                    ...this.options,
+                    onMilestoneDrag: (milestone, track, newDateStr) => {
+                        // Find the track and milestone in our data
+                        const trackIndex = this.data.findIndex(t => t.track === track.track);
+                        if (trackIndex === -1) return;
+                        
+                        // Match by type and name (more reliable than date since date changes)
+                        // For start/end milestones, type is unique per track
+                        const milestoneIndex = this.data[trackIndex].dates.findIndex(
+                            m => m.type === milestone.type && m.name === milestone.name
+                        );
+                        if (milestoneIndex === -1) return;
+                        
+                        // Update the date
+                        this.data[trackIndex].dates[milestoneIndex].date = newDateStr;
+                        
+                        // Update the preview (will trigger re-render)
+                        this.updatePreview();
+                        
+                        // Update the sidebar form inputs
+                        this.renderEditor();
+                    }
+                },
                 d3: window.d3 // Explicitly pass global d3
             });
             this.timeline.render();
@@ -84,8 +154,32 @@ export class TimelineBuilder {
         this.data.forEach((track, trackIndex) => {
             const trackEl = document.createElement('div');
             trackEl.className = 'track-card';
+            trackEl.dataset.trackIndex = trackIndex;
+            
+            // Determine which buttons to show based on position
+            const isFirst = trackIndex === 0;
+            const isLast = trackIndex === this.data.length - 1;
+            const isOnly = this.data.length === 1;
+            
+            // Build order controls HTML
+            let orderControlsHTML = '';
+            if (!isOnly) {
+                orderControlsHTML = `
+          <div class="track-order-controls">
+            <button class="btn-order move-up-btn" data-idx="${trackIndex}" 
+                    title="Move up" ${isFirst ? 'disabled' : ''}>
+              <i class="fas fa-chevron-up"></i>
+            </button>
+            <button class="btn-order move-down-btn" data-idx="${trackIndex}" 
+                    title="Move down" ${isLast ? 'disabled' : ''}>
+              <i class="fas fa-chevron-down"></i>
+            </button>
+          </div>`;
+            }
+            
             trackEl.innerHTML = `
         <div class="track-header">
+          ${orderControlsHTML}
           <div class="track-info">
             <input type="color" value="${track.color}" class="track-color-input" data-idx="${trackIndex}">
             <input type="text" value="${track.track}" class="track-name-input" data-idx="${trackIndex}" placeholder="Track Name">
@@ -102,12 +196,24 @@ export class TimelineBuilder {
             track.dates.forEach((milestone, mIndex) => {
                 const mEl = document.createElement('div');
                 mEl.className = 'milestone-row';
+                // Always use full date input, convert month/year to full date if needed
+                let dateStr = milestone.date;
+                if (this.isMonthYearString(dateStr)) {
+                    const [m, y] = dateStr.split('/');
+                    dateStr = `01/${m}/${y}`;
+                    milestone.date = dateStr; // Update data to full date
+                } else if (!this.isFullDateString(dateStr)) {
+                    // If not a valid format, default to today
+                    dateStr = new Date().toLocaleDateString('en-GB');
+                    milestone.date = dateStr;
+                }
+                const dateInputValue = this.dataDateToInputValue(dateStr);
                 mEl.innerHTML = `
           <select class="m-type-select" data-tidx="${trackIndex}" data-midx="${mIndex}">
             ${['start', 'end', 'submission', 'review', 'notification', 'abstract', 'invitation', 'cameraReady']
                         .map(t => `<option value="${t}" ${milestone.type === t ? 'selected' : ''}>${this.getTypeIcon(t)}</option>`).join('')}
           </select>
-          <input type="text" class="m-date-input" value="${milestone.date}" data-tidx="${trackIndex}" data-midx="${mIndex}" placeholder="DD/MM/YYYY">
+          <input type="date" class="m-date-input" value="${dateInputValue}" data-tidx="${trackIndex}" data-midx="${mIndex}">
           <input type="text" class="m-name-input" value="${milestone.name}" data-tidx="${trackIndex}" data-midx="${mIndex}" placeholder="Milestone Name">
           <button class="btn-icon delete-milestone-btn" data-tidx="${trackIndex}" data-midx="${mIndex}" title="Delete">&times;</button>
         `;
@@ -126,50 +232,93 @@ export class TimelineBuilder {
         return icons[type] || '•';
     }
 
+    moveTrackUp(trackIndex) {
+        if (trackIndex === 0) return;
+        // Swap with previous track
+        [this.data[trackIndex - 1], this.data[trackIndex]] = [this.data[trackIndex], this.data[trackIndex - 1]];
+        this.renderEditor();
+        this.updatePreview();
+    }
+
+    moveTrackDown(trackIndex) {
+        if (trackIndex === this.data.length - 1) return;
+        // Swap with next track
+        [this.data[trackIndex], this.data[trackIndex + 1]] = [this.data[trackIndex + 1], this.data[trackIndex]];
+        this.renderEditor();
+        this.updatePreview();
+    }
+
     attachEditorListeners() {
         // Track inputs
         document.querySelectorAll('.track-name-input').forEach(el => {
             el.addEventListener('input', (e) => {
-                this.data[e.target.dataset.idx].track = e.target.value;
+                const target = e.currentTarget;
+                this.data[target.dataset.idx].track = target.value;
                 this.updatePreview();
             });
         });
         document.querySelectorAll('.track-color-input').forEach(el => {
             el.addEventListener('input', (e) => {
-                this.data[e.target.dataset.idx].color = e.target.value;
+                const target = e.currentTarget;
+                this.data[target.dataset.idx].color = target.value;
                 this.updatePreview();
             });
         });
         document.querySelectorAll('.delete-track-btn').forEach(el => {
             el.addEventListener('click', (e) => {
-                this.data.splice(e.target.dataset.idx, 1);
+                const target = e.currentTarget;
+                this.data.splice(target.dataset.idx, 1);
                 this.renderEditor();
                 this.updatePreview();
             });
         });
+        
+        // Track reordering buttons
+        document.querySelectorAll('.move-up-btn').forEach(el => {
+            el.addEventListener('click', (e) => {
+                const target = e.currentTarget;
+                this.moveTrackUp(parseInt(target.dataset.idx));
+            });
+        });
+        document.querySelectorAll('.move-down-btn').forEach(el => {
+            el.addEventListener('click', (e) => {
+                const target = e.currentTarget;
+                this.moveTrackDown(parseInt(target.dataset.idx));
+            });
+        });
 
         // Milestone inputs
+        // Handle changes from native date inputs
         document.querySelectorAll('.m-date-input').forEach(el => {
-            el.addEventListener('input', (e) => {
-                this.data[e.target.dataset.tidx].dates[e.target.dataset.midx].date = e.target.value;
+            // Use change for native date controls
+            el.addEventListener('change', (e) => {
+                const target = e.currentTarget;
+                const tidx = target.dataset.tidx, midx = target.dataset.midx;
+                const v = target.value;
+                // Convert native value (YYYY-MM-DD) to data date string (DD/MM/YYYY)
+                const dateStr = this.inputValueToDataDate(v, 'date');
+                this.data[tidx].dates[midx].date = dateStr;
                 this.updatePreview();
             });
         });
         document.querySelectorAll('.m-name-input').forEach(el => {
             el.addEventListener('input', (e) => {
-                this.data[e.target.dataset.tidx].dates[e.target.dataset.midx].name = e.target.value;
+                const target = e.currentTarget;
+                this.data[target.dataset.tidx].dates[target.dataset.midx].name = target.value;
                 this.updatePreview();
             });
         });
         document.querySelectorAll('.m-type-select').forEach(el => {
             el.addEventListener('change', (e) => {
-                this.data[e.target.dataset.tidx].dates[e.target.dataset.midx].type = e.target.value;
+                const target = e.currentTarget;
+                this.data[target.dataset.tidx].dates[target.dataset.midx].type = target.value;
                 this.updatePreview();
             });
         });
         document.querySelectorAll('.delete-milestone-btn').forEach(el => {
             el.addEventListener('click', (e) => {
-                const { tidx, midx } = e.target.dataset;
+                const target = e.currentTarget;
+                const { tidx, midx } = target.dataset;
                 this.data[tidx].dates.splice(midx, 1);
                 this.renderEditor();
                 this.updatePreview();
@@ -177,8 +326,9 @@ export class TimelineBuilder {
         });
         document.querySelectorAll('.add-milestone-btn').forEach(el => {
             el.addEventListener('click', (e) => {
-                this.data[e.target.dataset.idx].dates.push({
-                    date: '01/01/2025', name: 'New Milestone', type: 'submission'
+                const target = e.currentTarget;
+                this.data[target.dataset.idx].dates.push({
+                    date: new Date().toLocaleDateString('en-GB'), name: 'New Milestone', type: 'submission'
                 });
                 this.renderEditor();
                 this.updatePreview();
@@ -187,10 +337,11 @@ export class TimelineBuilder {
     }
 
     addTrack() {
+        const todayStr = new Date().toLocaleDateString('en-GB');
         this.data.push({
             track: 'New Track',
             color: '#333333',
-            dates: [{ date: '01/01/2025', name: 'Start', type: 'start' }]
+            dates: [{ date: todayStr, name: 'Start', type: 'start' }]
         });
         this.renderEditor();
         this.updatePreview();

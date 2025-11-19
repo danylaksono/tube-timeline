@@ -6,6 +6,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Tube Timeline Builder</title>
   <script src="https://d3js.org/d3.v7.min.js"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -35,13 +36,13 @@
 
     /* Sidebar */
     .sidebar {
-      width: 400px;
-      background: var(--surface);
+      width: var(--sidebar-width, 400px);
+      background: linear-gradient(135deg, var(--surface) 0%, #f8fafc 100%);
       border-right: 1px solid var(--border);
       display: flex;
       flex-direction: column;
       z-index: 10;
-      box-shadow: 4px 0 24px rgba(0, 0, 0, 0.05);
+      box-shadow: 4px 0 24px rgba(0, 0, 0, 0.1);
     }
 
     .sidebar-header {
@@ -122,9 +123,12 @@
     .track-card {
       background: var(--surface-alt);
       border: 1px solid var(--border);
-      border-radius: 0.5rem;
+      border-radius: 8px;
       padding: 1rem;
       margin-bottom: 1rem;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+      position: relative;
+      transition: box-shadow 0.2s;
     }
 
     .track-header {
@@ -132,6 +136,48 @@
       justify-content: space-between;
       align-items: center;
       margin-bottom: 1rem;
+      gap: 0.5rem;
+    }
+
+    .track-order-controls {
+      display: flex;
+      flex-direction: column;
+      gap: 0.25rem;
+      margin-right: 0.5rem;
+    }
+
+    .btn-order {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      color: var(--text-light);
+      cursor: pointer;
+      padding: 0.25rem 0.5rem;
+      border-radius: 4px;
+      font-size: 0.75rem;
+      width: 28px;
+      height: 28px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s;
+      flex-shrink: 0;
+    }
+
+    .btn-order:hover:not(:disabled) {
+      background: var(--primary);
+      border-color: var(--primary);
+      color: white;
+      transform: translateY(-1px);
+      box-shadow: 0 2px 4px rgba(37, 99, 235, 0.2);
+    }
+
+    .btn-order:active:not(:disabled) {
+      transform: translateY(0);
+    }
+
+    .btn-order:disabled {
+      opacity: 0.3;
+      cursor: not-allowed;
     }
 
     .track-info {
@@ -166,7 +212,7 @@
     /* Milestones */
     .milestone-row {
       display: grid;
-      grid-template-columns: 40px 90px 1fr 24px;
+      grid-template-columns: 40px 1.5fr 1.5fr 24px;
       gap: 0.5rem;
       align-items: center;
       margin-bottom: 0.5rem;
@@ -347,6 +393,14 @@
   <script type="module">
     import { TimelineBuilder } from './src/builder.js';
     new TimelineBuilder();
+
+    // Dynamic CSS adjustments
+    function updateCSS() {
+      const sidebarWidth = Math.min(450, Math.max(350, window.innerWidth * 0.25));
+      document.documentElement.style.setProperty('--sidebar-width', `${sidebarWidth}px`);
+    }
+    window.addEventListener('resize', updateCSS);
+    updateCSS();
   </script>
 </body>
 

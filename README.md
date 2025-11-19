@@ -33,7 +33,7 @@ type Milestone = { date: string; name: string; type: MilestoneType; url?: string
 type Track = { track: string; label?: string; color: string; dates: Milestone[] };
 ```
 
-Dates accept `DD/MM/YYYY` or `MM/YYYY`.
+Dates accept `DD/MM/YYYY` or `MM/YYYY`. The editor now uses native date/month pickers and helper buttons for quick changes.
 
 ### Usage
 

@@ -1,0 +1,33 @@
+# Node
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Environment files
+.env
+.env.*
+
+# Build output
+dist/
+build/
+out/
+public/
+
+# Mac system files
+.DS_Store
+
+# Logs
+logs
+*.log
+
+# IDE and Editor config
+.vscode/
+.idea/
+*.swp
+
+# Misc
+*.tgz
+coverage/
+!.env.example
+

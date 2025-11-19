@@ -110,6 +110,7 @@ The original academic conference example featuring multiple submission tracks:
 - **Modular Examples**: Separate HTML files and JSON data for easy customization
 - **Today Indicator**: Visual "today" line for current date reference
 - **Extensible**: Easy to add new examples and customize existing ones
+ - **Legend Interactivity**: Click a legend item to isolate its track; other tracks dim for clarity. Click again to restore all tracks.
 
 ## Usage
 
@@ -140,6 +141,14 @@ The original academic conference example featuring multiple submission tracks:
 </body>
 </html>
 ```
+
+### Manual Verification: Legend Interactivity
+
+- **Isolation Toggle**: Click any legend item to isolate its track; all other tracks dim to 20% opacity.
+- **Restore**: Click the same legend item again to restore full view for all tracks.
+- **Switch Isolation**: Click a different legend item while one is isolated to switch isolation to the new track.
+- **Interactivity**: Milestone tooltips and clicks remain active for both isolated and dimmed tracks.
+
 
 ### Data Structure
 

@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <title>Product Launch Timeline 🚀</title>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <style>
+        html,
+        body {
+            height: 100%;
+            width: 100%;
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            font-family: sans-serif;
+        }
+
+        svg {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: #fff;
+            display: block;
+        }
+
+        .today-line {
+            stroke: #888;
+            stroke-width: 3;
+            stroke-dasharray: 4;
+        }
+
+        #github-link {
+            position: fixed;
+            right: 8px;
+            bottom: 8px;
+            z-index: 9999;
+            display: block;
+            width: 24px;
+            height: 24px;
+        }
+
+        #github-link svg {
+            position: static;
+            width: 100%;
+            height: 100%;
+            opacity: 0.7;
+            transition: opacity 0.2s;
+        }
+
+        .footer svg:hover {
+            opacity: 1;
+        }
+
+        .example-nav {
+            position: fixed;
+            bottom: 8px;
+            left: 8px;
+            z-index: 9999;
+            background: rgba(255, 255, 255, 0.9);
+            padding: 8px;
+            border-radius: 4px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .example-nav a {
+            display: inline-block;
+            margin: 0 4px;
+            padding: 4px 8px;
+            text-decoration: none;
+            color: #333;
+            border-radius: 3px;
+            font-size: 12px;
+        }
+
+        .example-nav a:hover {
+            background: #f0f0f0;
+        }
+
+        .example-nav a.active {
+            background: #007cba;
+            color: white;
+        }
+    </style>
+</head>
+
+<body>
+    <svg></svg>
+
+    <div class="example-nav">
+        <a href="product-launch.html" class="active">Product Launch</a>
+        <a href="eurovis-2026.html">EuroVIS 2026</a>
+        <a href="../index.html">Home</a>
+    </div>
+
+    <script type="module">
+        import { TubeTimeline } from '../src/tube-timeline.js';
+
+        // Load data from JSON file
+        let data;
+        try {
+            const response = await fetch('./data/product-launch.json');
+            data = await response.json();
+        } catch (error) {
+            console.error('Failed to load data:', error);
+            // Fallback data
+            data = [];
+        }
+
+        // Initialize library
+        const svg = document.querySelector('svg');
+        const timeline = new TubeTimeline({
+            target: svg,
+            data,
+            options: {
+                header: {
+                    title: 'Product Launch Timeline',
+                    subtitle: 'Roadmap to Launch Day',
+                    logoHref: '#'
+                },
+                showToday: true,
+                orientation: 'auto'
+            }
+        });
+        timeline.render();
+    </script>
+
+    <a id="github-link" href="https://github.com/velitchko/eurovis-timeline" target="_blank" title="View on GitHub">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="black">
+            <path
+                d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.6-.18-3.29-.8-3.29-3.56 0-.79.28-1.43.74-1.93-.07-.18-.32-.91.07-1.89 0 0 .6-.19 1.97.73a6.8 6.8 0 0 1 1.8-.24c.61 0 1.22.08 1.8.24 1.37-.92 1.97-.73 1.97-.73.39.98.14 1.71.07 1.89.46.5.74 1.14.74 1.93 0 2.77-1.69 3.38-3.3 3.56.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.19 0 .21.15.46.55.38A8.013 8.013 0 0 0 16 8c0-4.42-3.58-8-8-8z" />
+        </svg>
+    </a>
+</body>
+
+</html>

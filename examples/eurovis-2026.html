@@ -34,7 +34,7 @@
 
     #github-link {
       position: fixed;
-      left: 8px;
+      right: 8px;
       bottom: 8px;
       z-index: 9999;
       display: block;
@@ -56,13 +56,13 @@
 
     .example-nav {
       position: fixed;
-      top: 8px;
-      right: 8px;
+      bottom: 8px;
+      left: 8px;
       z-index: 9999;
       background: rgba(255, 255, 255, 0.9);
       padding: 8px;
       border-radius: 4px;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
     }
 
     .example-nav a {
@@ -97,7 +97,7 @@
 
   <script type="module">
     import { TubeTimeline } from '../src/tube-timeline.js';
-    
+
     // Load data from JSON file
     let data;
     try {
@@ -115,10 +115,10 @@
       target: svg,
       data,
       options: {
-        header: { 
-          title: 'EuroVis 2026 Timeline', 
-          subtitle: 'Key Deadlines for All Tracks', 
-          logoHref: '#' 
+        header: {
+          title: 'EuroVis 2026 Timeline',
+          subtitle: 'Key Deadlines for All Tracks',
+          logoHref: '#'
         },
         showToday: true,
         orientation: 'auto'

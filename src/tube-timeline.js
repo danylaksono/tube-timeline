@@ -38,6 +38,7 @@ export class TubeTimeline {
       orientation: options.orientation || 'auto'
     };
     this.boundResize = () => this.render();
+    this.activeTrack = null;
   }
 
   parseDate(str) {
@@ -122,14 +123,29 @@ export class TubeTimeline {
     this.data.forEach((track, i) => {
       const col = i % legendCols, row = Math.floor(i / legendCols);
       const xBase = col * colWidth, yBase = row * (isVertical ? 10 : legendSpacing) + (isVertical ? 2 : 4);
-      legendGroup.append('line')
+
+      const isActive = this.activeTrack === track.track;
+      const isDimmed = this.activeTrack && !isActive;
+
+      const itemGroup = legendGroup.append('g')
+        .attr('cursor', 'pointer')
+        .attr('opacity', isDimmed ? 0.4 : 1)
+        .on('click', () => {
+          this.activeTrack = isActive ? null : track.track;
+          this.render();
+        });
+
+      itemGroup.append('line')
         .attr('x1', xBase).attr('y1', yBase)
         .attr('x2', xBase + (isHeightConstrained ? 8 : 12)).attr('y2', yBase)
         .attr('stroke', track.color).attr('stroke-width', isHeightConstrained ? 4 : 6)
         .attr('stroke-linecap', 'round');
-      legendGroup.append('text')
+
+      itemGroup.append('text')
         .attr('x', xBase + (isHeightConstrained ? 12 : 17)).attr('y', yBase + (isHeightConstrained ? 3 : 4))
-        .attr('font-size', isHeightConstrained ? 9 : 11).attr('fill', '#222')
+        .attr('font-size', isHeightConstrained ? 9 : 11)
+        .attr('fill', '#222')
+        .attr('font-weight', isActive ? 'bold' : 'normal')
         .attr('font-family', 'sans-serif').text(track.track);
     });
   }
@@ -226,13 +242,19 @@ export class TubeTimeline {
       const pos = isHorizontal
         ? { fixed: yScale(track.track), axis: d => xScale(d.parsed) }
         : { fixed: xScale(track.track), axis: d => yScale(d.parsed) };
+
+      const isDimmed = this.activeTrack && this.activeTrack !== track.track;
+      const opacity = isDimmed ? 0.2 : 1; // dimmed tracks show at 20% opacity
+
       trackLinesGroup.selectAll()
         .data(track.dates).enter().append('g')
+        .attr('class', 'milestone-group')
         .attr('transform', d => {
           const x = isHorizontal ? pos.axis(d) : pos.fixed;
           const y = isHorizontal ? pos.fixed : pos.axis(d);
           return `translate(${x},${y})`;
         })
+        .attr('opacity', opacity)
         .each(function (d) {
           if (d.type === 'start' || d.type === 'end') {
             d3.select(this).append('rect')
@@ -278,6 +300,11 @@ export class TubeTimeline {
         .on('mouseout', () => this.removeSvgTooltip(g))
         .on('click', (_, d) => this.options.onMilestoneClick(d, track));
     });
+
+    if (this.activeTrack) {
+      trackLinesGroup.selectAll('.track-line')
+        .attr('opacity', d => d.track === this.activeTrack ? 1 : 0.2);
+    }
 
     // Month ticks/labels
     const months = this.d3.timeMonths(

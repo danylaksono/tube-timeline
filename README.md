@@ -1,41 +1,34 @@
-## tube-timeline
+# tube-timeline
 
 London tube style configurable timeline renderer powered by D3 v7. Ships as a tiny ES module you can use directly in the browser or bundle in your app.
 
 ![](./timeline.png)
 
-This work is heavily inspired by https://velitchko.github.io/eurovis-timeline/, for the EuroVIS 2026.
+This work is heavily inspired by [EuroVIS 2026 timeline](https://velitchko.github.io/eurovis-timeline/).
 
-### Install
+## Installation
 
-Use via script module directly (no build step):
+### Via Script Module (No Build Step)
 
 ```html
 <script type="module">
   import { TubeTimeline } from './src/tube-timeline.js';
-  // ... see Usage below
-  new TubeTimeline({ target: document.querySelector('svg'), data }).render();
   // d3 v7 must be present globally or passed in via cfg.d3
+  new TubeTimeline({ target: document.querySelector('svg'), data }).render();
 </script>
 ```
 
-If publishing to npm, consumers can `npm i tube-timeline` and:
+### Via npm
+
+```bash
+npm i tube-timeline
+```
 
 ```js
 import { TubeTimeline } from 'tube-timeline';
 ```
 
-### Data shape
-
-```ts
-type MilestoneType = 'start'|'end'|'submission'|'notification'|'review'|'abstract'|'invitation'|'cameraReady';
-type Milestone = { date: string; name: string; type: MilestoneType; url?: string; label?: string };
-type Track = { track: string; label?: string; color: string; dates: Milestone[] };
-```
-
-Dates accept `DD/MM/YYYY` or `MM/YYYY`. The editor now uses native date/month pickers and helper buttons for quick changes.
-
-### Usage
+## Quick Start
 
 ```js
 import { TubeTimeline } from './src/tube-timeline.js';
@@ -54,47 +47,116 @@ const timeline = new TubeTimeline({
 timeline.render();
 ```
 
-### API
+## API Reference
 
-- `new TubeTimeline(config)`
-  - **target**: SVG element or selector
-  - **data**: array of tracks (see Data shape)
-  - **d3**: optional d3 instance; if omitted, uses global `d3`
-  - **options.header**: `{ title, subtitle, logoHref }`
-  - **options.showToday**: show the Today marker (default true)
-  - **options.orientation**: `'auto' | 'horizontal' | 'vertical'`
-  - **options.onMilestoneClick**: handler `(milestone, track)`; default opens `milestone.url` if present
+### `new TubeTimeline(config)`
 
-- `render()` Re-renders responsively; reattaches resize listener
-- `destroy()` Clears SVG and removes listeners
+Creates a new timeline instance.
 
-### Examples
+**Parameters:**
 
-The library comes with several example implementations:
+- **target** (required): SVG element or selector string
+- **data** (required): Array of tracks (see [Data Structure](#data-structure))
+- **d3** (optional): D3 instance; if omitted, uses global `d3`
+- **options** (optional):
+  - **header**: `{ title, subtitle, logoHref }` - Header configuration
+  - **showToday**: Boolean - Show the "Today" marker (default: `true`)
+  - **orientation**: `'auto' | 'horizontal' | 'vertical'` - Layout orientation
+  - **onMilestoneClick**: Function `(milestone, track)` - Click handler; default opens `milestone.url` if present
 
-- **Product Launch Timeline** (`examples/product-launch.html`) - A comprehensive software product development and launch timeline
-- **EuroVIS 2026 Conference** (`examples/eurovis-2026.html`) - Academic conference deadlines and tracks
-- **Home Demo** (`index.html`) - Interactive demo showcasing the library capabilities
+### Methods
 
-### Demo
+- **`render()`**: Re-renders the timeline responsively; reattaches resize listener
+- **`destroy()`**: Clears SVG and removes all event listeners
 
-Open `index.html` in a static server to see the interactive timeline in action. Navigate between different examples using the navigation menu.
+## Data Structure
+
+```typescript
+type MilestoneType = 'start' | 'end' | 'submission' | 'notification' | 'review' | 'abstract' | 'invitation' | 'cameraReady';
+
+type Milestone = {
+  date: string;        // DD/MM/YYYY or MM/YYYY format
+  name: string;       // Milestone name
+  type: MilestoneType;
+  url?: string;       // Optional URL for clickable milestones
+  label?: string;     // Optional short label
+};
+
+type Track = {
+  track: string;      // Track name
+  label?: string;     // Optional short label for display
+  color: string;      // Hex color code
+  dates: Milestone[]; // Array of milestones
+};
+```
+
+### Supported Milestone Types
+
+| Type          | Icon | Description                       |
+|---------------|------|-----------------------------------|
+| start         | 📄   | Beginning or kickoff              |
+| abstract      | 📝   | Abstract or planning phase        |
+| submission    | 📬   | Submission or delivery            |
+| review        | 🔍   | Review or evaluation period       |
+| notification  | 📢   | Notification or announcement      |
+| cameraReady   | 🖨️   | Final delivery or publication     |
+| end           | ✅   | Completion or final milestone     |
+| invitation    | ✉️   | Invitation or request             |
+
+### Example Data
+
+```javascript
+const data = [
+  {
+    track: 'Product Development',
+    label: 'PD',
+    color: '#E32017',
+    dates: [
+      {
+        date: '01/01/2024',
+        name: 'Project Kickoff',
+        type: 'start',
+        url: 'https://example.com',
+        label: 'Kickoff'
+      },
+      {
+        date: '15/03/2024',
+        name: 'Beta Release',
+        type: 'submission'
+      }
+    ]
+  }
+];
+```
+
+## Features
+
+- **Multiple Tracks**: Display parallel timelines with distinct colors and labels
+- **Interactive Milestones**: Hover tooltips and clickable milestones with optional URLs
+- **Responsive Design**: Automatically switches between horizontal and vertical layouts
+- **Legend Interactivity**: Click a legend item to isolate its track; other tracks dim for clarity. Click again to restore all tracks.
+- **Today Indicator**: Visual "today" line for current date reference
+- **Modular Examples**: Separate HTML files and JSON data for easy customization
+- **Extensible**: Easy to add new examples and customize existing ones
 
 ## Examples
+
+The library comes with several example implementations:
 
 ### Product Launch Timeline
 
 A comprehensive example showing a software product development lifecycle with multiple parallel tracks:
 
 - **Product Development** - Core development milestones
-- **Quality Assurance** - Testing and validation phases  
+- **Quality Assurance** - Testing and validation phases
 - **Marketing & Launch** - Brand and promotional activities
 - **Sales & Partnerships** - Business development and sales preparation
 - **Legal & Compliance** - Legal requirements and approvals
 - **Infrastructure & DevOps** - Technical infrastructure setup
 
-### EuroVIS 2026 Conference Timeline
+**File**: `examples/product-launch.html`
 
+### EuroVIS 2026 Conference Timeline
 
 The original academic conference example featuring multiple submission tracks:
 
@@ -102,171 +164,40 @@ The original academic conference example featuring multiple submission tracks:
 - Panels & Tutorials, Workshops, Education Papers
 - Posters & Demos
 
-## Features
+**File**: `examples/eurovis-2026.html`
 
-- **Multiple Tracks**: Display parallel timelines with distinct colors and labels
-- **Interactive Milestones**: Hover tooltips and clickable milestones with optional URLs
-- **Responsive Design**: Automatically switches between horizontal and vertical layouts
-- **Modular Examples**: Separate HTML files and JSON data for easy customization
-- **Today Indicator**: Visual "today" line for current date reference
-- **Extensible**: Easy to add new examples and customize existing ones
- - **Legend Interactivity**: Click a legend item to isolate its track; other tracks dim for clarity. Click again to restore all tracks.
+### Interactive Demo
 
-## Usage
-
-### Basic Setup
-
-```html
-<!DOCTYPE html>
-<html>
-<head>
-  <script src="https://d3js.org/d3.v7.min.js"></script>
-</head>
-<body>
-  <svg></svg>
-  <script type="module">
-    import { TubeTimeline } from './src/tube-timeline.js';
-    
-    const timeline = new TubeTimeline({
-      target: document.querySelector('svg'),
-      data: yourData,
-      options: {
-        header: { title: 'My Timeline', subtitle: 'Description' },
-        showToday: true,
-        orientation: 'auto'
-      }
-    });
-    timeline.render();
-  </script>
-</body>
-</html>
-```
-
-### Manual Verification: Legend Interactivity
-
-- **Isolation Toggle**: Click any legend item to isolate its track; all other tracks dim to 20% opacity.
-- **Restore**: Click the same legend item again to restore full view for all tracks.
-- **Switch Isolation**: Click a different legend item while one is isolated to switch isolation to the new track.
-- **Interactivity**: Milestone tooltips and clicks remain active for both isolated and dimmed tracks.
-
-
-### Data Structure
-
-```javascript
-const data = [
-  {
-    track: 'Track Name',
-    label: 'TN', // Short label for display
-    color: '#E32017', // Hex color
-    dates: [
-      {
-        date: '01/01/2024', // DD/MM/YYYY or MM/YYYY
-        name: 'Milestone Name',
-        type: 'start', // See supported types below
-        url: 'https://example.com', // Optional
-        label: 'Short Label' // Optional
-      }
-    ]
-  }
-];
-```
-
-### Supported Milestone Types
-
-| Type          | Icon | Description                       |
-|---------------|------|---------------------------------|
-| start         | 📄   | Beginning or kickoff             |
-| abstract      | 📝   | Abstract or planning phase       |
-| submission    | 📬   | Submission or delivery           |
-| review        | 🔍   | Review or evaluation period      |
-| notification  | 📢   | Notification or announcement     |
-| cameraReady   | 🖨️   | Final delivery or publication    |
-| end           | ✅   | Completion or final milestone    |
-| invitation    | ✉️   | Invitation or request            |
+Open `index.html` in a static server to see the interactive timeline builder in action. Navigate between different examples using the navigation menu.
 
 ## Project Structure
 
 ```
 tube-timeline/
 ├── src/
-
 │   └── tube-timeline.js          # Main library
-
-
-
 ├── examples/
 │   ├── data/
-
-
 │   │   ├── product-launch.json   # Product launch data
-
-
-
 │   │   └── eurovis-2026.json     # Conference data
-
-
-
-
-
 │   ├── product-launch.html       # Product launch example
-
-
-
-
-
 │   └── eurovis-2026.html         # Conference example
-
-
-
-
-
-
 ├── index.html                    # Main demo page
-
-
-
-
-
-
-
-
-
 ├── package.json
 └── README.md
 ```
 
 ## Dependencies
 
-- [D3.js v7](https://d3js.org/d3.v7.min.js) for rendering SVG elements and scales
-
-
-
-
-
-
-
-
-
-
+- [D3.js v7](https://d3js.org/d3.v7.min.js) - For rendering SVG elements and scales
 
 ## License
 
 This project is released under the MIT License.
 
-## Author
+## Authors
 
-[![velitchko's github](https://github.com/velitchko.png?size=40)](https://github.com/velitchko)  
-
-
-
-
-
-
-[![danylaksono's github](https://github.com/danylaksono.png?size=40)](https://github.com/danylaksono)  
-
+[![velitchko's github](https://github.com/velitchko.png?size=40)](https://github.com/velitchko)
+[![danylaksono's github](https://github.com/danylaksono.png?size=40)](https://github.com/danylaksono)
 
 Feel free to reach out or follow for updates!
-
-
-
-

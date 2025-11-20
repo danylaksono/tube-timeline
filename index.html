@@ -260,6 +260,22 @@
       background: #1d4ed8;
     }
 
+    .sidebar-actions {
+      display: flex;
+      gap: 0.5rem;
+    }
+
+    #add-track-btn {
+      flex: 2;
+    }
+
+    #import-btn {
+      flex: 1;
+      background: var(--surface);
+      color: var(--primary);
+      border: 1px solid var(--primary);
+    }
+
     /* Export Bar */
     .export-bar {
       padding: 1rem;
@@ -299,8 +315,8 @@
       flex: 1;
       overflow: auto;
       display: flex;
-      align-items: center;
-      justify-content: center;
+      align-items: stretch;
+      justify-content: stretch;
       padding: 2rem;
     }
 
@@ -308,8 +324,8 @@
       background: white;
       box-shadow: 0 10px 40px -10px rgba(0, 0, 0, 0.1);
       border-radius: 8px;
-      max-width: 100%;
-      max-height: 100%;
+      width: 100%;
+      height: 100%;
     }
 
     .examples-nav {
@@ -328,6 +344,38 @@
       text-decoration: none;
       margin-left: 0.5rem;
     }
+
+    @media (max-width: 900px) {
+      body {
+        flex-direction: column;
+        overflow: auto;
+        height: auto;
+      }
+
+      .sidebar {
+        width: 100%;
+        border-right: none;
+        border-bottom: 1px solid var(--border);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+      }
+
+      .sidebar-content {
+        padding: 1rem;
+      }
+
+      #timeline-preview {
+        min-height: 70vh;
+        padding: 1rem;
+      }
+
+      #timeline-preview svg {
+        height: 65vh !important;
+      }
+
+      .export-bar {
+        padding: 1rem;
+      }
+    }
   </style>
 </head>
 
@@ -341,15 +389,15 @@
     <div class="sidebar-content">
       <div class="section-title">Global Settings</div>
       <div class="form-group">
-        <label class="form-label">Title</label>
+        <label class="form-label" for="opt-title">Title</label>
         <input type="text" id="opt-title" value="My Timeline">
       </div>
       <div class="form-group">
-        <label class="form-label">Subtitle</label>
+        <label class="form-label" for="opt-subtitle">Subtitle</label>
         <input type="text" id="opt-subtitle" value="Project Roadmap">
       </div>
       <div class="form-group">
-        <label class="form-label">Orientation</label>
+        <label class="form-label" for="opt-orientation">Orientation</label>
         <select id="opt-orientation">
           <option value="auto">Auto (Responsive)</option>
           <option value="horizontal">Horizontal</option>
@@ -366,11 +414,9 @@
         <!-- Tracks injected here -->
       </div>
 
-      <div style="display: flex; gap: 0.5rem;">
-        <button id="add-track-btn" class="btn-primary" style="flex: 2;">+ Add Track</button>
-        <button id="import-btn" class="btn-primary"
-          style="flex: 1; background: var(--surface); color: var(--primary); border: 1px solid var(--primary);">Import
-          JSON</button>
+      <div class="sidebar-actions">
+        <button id="add-track-btn" class="btn-primary">+ Add Track</button>
+        <button id="import-btn" class="btn-primary">Import JSON</button>
       </div>
     </div>
 

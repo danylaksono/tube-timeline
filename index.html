@@ -335,11 +335,12 @@
 
     /* Export Bar */
     .export-bar {
-      padding: 1rem;
+      padding: 0.75rem;
       border-top: 1px solid var(--border);
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-      gap: 0.5rem;
+      grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+      gap: 0.4rem;
+      align-items: stretch;
     }
 
     .export-bar .button {
@@ -347,12 +348,26 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      gap: 0.5rem;
+      gap: 0.4rem;
       border-radius: 0.75rem;
       border: 1px solid var(--border);
       background: #fff;
       color: var(--text);
       box-shadow: inset 0 -1px 0 rgba(0, 0, 0, 0.03);
+      padding: 0.5rem;
+      font-size: 0.85rem;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .export-bar .button .icon {
+      flex: 0 0 auto;
+    }
+
+    .export-bar .button span:last-child {
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
 
     /* Main Preview */
@@ -426,7 +441,8 @@
       }
 
       .export-bar {
-        padding: 1rem;
+        padding: 0.75rem;
+        grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
       }
     }
   </style>
@@ -483,6 +499,10 @@
       <button class="button is-white is-fullwidth" id="export-html-btn">
         <span class="icon"><i class="fas fa-code"></i></span>
         <span>Export HTML</span>
+      </button>
+      <button class="button is-white is-fullwidth" id="export-json-btn">
+        <span class="icon"><i class="fas fa-file-download"></i></span>
+        <span>Export JSON</span>
       </button>
       <button class="button is-white is-fullwidth" id="export-png-btn">
         <span class="icon"><i class="fas fa-image"></i></span>

@@ -179,6 +179,9 @@ export class TimelineBuilder {
     document
       .getElementById("export-svg-btn")
       .addEventListener("click", () => this.exportImage("svg"));
+    document
+      .getElementById("export-json-btn")
+      .addEventListener("click", () => this.exportJSON());
 
     // Global options listeners
     document.getElementById("opt-title").addEventListener("input", (e) => {
@@ -743,6 +746,22 @@ export class TimelineBuilder {
       reader.readAsText(file);
     };
     input.click();
+  }
+
+  exportJSON() {
+    const payload = {
+      data: this.data,
+      options: this.options,
+    };
+    const blob = new Blob([JSON.stringify(payload, null, 2)], {
+      type: "application/json",
+    });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "timeline.json";
+    a.click();
+    URL.revokeObjectURL(url);
   }
 
   async exportHTML() {

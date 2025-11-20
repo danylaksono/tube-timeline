@@ -33,7 +33,7 @@ export class TimelineBuilder {
           {
             date: fmt(plus(30)),
             name: "Design Review",
-            type: "review",
+            type: "node",
             label: "Review",
           },
           { date: fmt(plus(90)), name: "Launch", type: "end", label: "Launch" },
@@ -51,6 +51,13 @@ export class TimelineBuilder {
     };
     this.timeline = null;
     this.svg = null; // Add a property to hold the SVG element
+    this.trackCollapseState = new WeakMap();
+    this.handleDocumentClick = (event) => {
+      if (!event.target.closest(".milestone-actions-dropdown")) {
+        this.closeAllDropdowns();
+      }
+    };
+    document.addEventListener("click", this.handleDocumentClick);
     this.init();
   }
 
@@ -103,6 +110,57 @@ export class TimelineBuilder {
       return `${m.padStart(2, "0")}/${y}`;
     }
     return value;
+  }
+
+  normalizeDateString(str) {
+    if (!str) return "";
+    if (this.isFullDateString(str)) return str;
+    if (this.isMonthYearString(str)) {
+      const [m, y] = str.split("/");
+      return `01/${m}/${y}`;
+    }
+    return "";
+  }
+
+  getSanitizedData() {
+    const todayStr = new Date().toLocaleDateString("en-GB");
+    return this.data.map((track) => ({
+      ...track,
+      dates: track.dates.map((milestone) => {
+        const normalized = this.normalizeDateString(milestone.date);
+        return {
+          ...milestone,
+          date: normalized || todayStr,
+        };
+      }),
+    }));
+  }
+
+  closeAllDropdowns() {
+    document
+      .querySelectorAll(".milestone-actions-dropdown.is-active")
+      .forEach((dropdown) => dropdown.classList.remove("is-active"));
+  }
+
+  toggleDropdown(dropdown) {
+    if (!dropdown) return;
+    const isActive = dropdown.classList.contains("is-active");
+    this.closeAllDropdowns();
+    if (!isActive) dropdown.classList.add("is-active");
+  }
+
+  parseDateForSort(str) {
+    if (!str) return new Date(0);
+    if (this.isFullDateString(str)) {
+      const [d, m, y] = str.split("/").map(Number);
+      return new Date(y, m - 1, d);
+    }
+    if (this.isMonthYearString(str)) {
+      const [m, y] = str.split("/").map(Number);
+      return new Date(y, m - 1, 1);
+    }
+    const parsed = Date.parse(str);
+    return Number.isNaN(parsed) ? new Date(0) : new Date(parsed);
   }
 
   attachGlobalListeners() {
@@ -159,9 +217,11 @@ export class TimelineBuilder {
       if (this.timeline) this.timeline.destroy();
       this.timeline = new TubeTimeline({
         target: this.svg,
-        data: this.data,
+        data: this.getSanitizedData(),
         options: {
           ...this.options,
+          // Preserve editor track ordering in the timeline (don't auto-sort by date)
+          sortTracksByStartDate: false,
           onMilestoneDrag: (milestone, track, newDateStr) => {
             // Find the track and milestone in our data
             const trackIndex = this.data.findIndex(
@@ -200,7 +260,10 @@ export class TimelineBuilder {
 
     this.data.forEach((track, trackIndex) => {
       const trackEl = document.createElement("div");
-      trackEl.className = "track-card";
+      const isCollapsed = this.trackCollapseState.get(track) || false;
+      trackEl.className = `track-card card ${
+        isCollapsed ? "is-collapsed" : ""
+      }`;
       trackEl.dataset.trackIndex = trackIndex;
 
       // Determine which buttons to show based on position
@@ -224,64 +287,159 @@ export class TimelineBuilder {
           </div>`;
       }
 
+      const collapseIcon = isCollapsed ? "fa-chevron-down" : "fa-chevron-up";
+      const collapseLabel = isCollapsed ? "Expand track" : "Collapse track";
+
       trackEl.innerHTML = `
-        <div class="track-header">
-          ${orderControlsHTML}
-          <div class="track-info">
-            <input type="color" value="${track.color}" class="track-color-input" data-idx="${trackIndex}">
-            <input type="text" value="${track.track}" class="track-name-input" data-idx="${trackIndex}" placeholder="Track Name">
+        <header class="card-header track-header">
+          <div class="track-header-left">
+            ${orderControlsHTML}
+            <div class="track-info">
+              <input type="color" value="${
+                track.color
+              }" class="track-color-input" data-idx="${trackIndex}">
+              <input type="text" value="${
+                track.track
+              }" class="track-name-input" data-idx="${trackIndex}" placeholder="Track Name">
+            </div>
           </div>
-          <button class="btn-icon delete-track-btn" data-idx="${trackIndex}" title="Delete Track">&times;</button>
+          <div class="track-header-actions">
+            <button class="btn-icon delete-track-btn" data-idx="${trackIndex}" title="Delete Track">
+              <i class="fas fa-trash"></i>
+            </button>
+            <button class="btn-icon track-collapse-btn" data-idx="${trackIndex}" title="${collapseLabel}">
+              <i class="fas ${collapseIcon}"></i>
+            </button>
+          </div>
+        </header>
+        <div class="card-content track-body ${
+          isCollapsed ? "is-collapsed" : ""
+        }">
+          <div class="milestones-list" id="milestones-${trackIndex}"></div>
+          <button class="btn-small add-milestone-btn" data-idx="${trackIndex}">+ Add Milestone</button>
         </div>
-        <div class="milestones-list" id="milestones-${trackIndex}"></div>
-        <button class="btn-small add-milestone-btn" data-idx="${trackIndex}">+ Add Milestone</button>
       `;
       container.appendChild(trackEl);
 
-      // Milestones
+      // Milestones (auto-sorted by date)
+      track.dates.sort((a, b) => {
+        const normalizedA = this.normalizeDateString(a.date) || a.date;
+        const normalizedB = this.normalizeDateString(b.date) || b.date;
+        return (
+          this.parseDateForSort(normalizedA) -
+          this.parseDateForSort(normalizedB)
+        );
+      });
       const milestonesContainer = trackEl.querySelector(
         `#milestones-${trackIndex}`
       );
       track.dates.forEach((milestone, mIndex) => {
         const mEl = document.createElement("div");
         mEl.className = "milestone-row";
-        // Always use full date input, convert month/year to full date if needed
+        mEl.dataset.tidx = trackIndex;
+        mEl.dataset.midx = mIndex;
         let dateStr = milestone.date;
+        let dateError = "";
+        let dateInputValue = "";
         if (this.isMonthYearString(dateStr)) {
           const [m, y] = dateStr.split("/");
           dateStr = `01/${m}/${y}`;
-          milestone.date = dateStr; // Update data to full date
-        } else if (!this.isFullDateString(dateStr)) {
-          // If not a valid format, default to today
-          dateStr = new Date().toLocaleDateString("en-GB");
-          milestone.date = dateStr;
+          milestone.date = dateStr; // Normalize month/year once
+          dateInputValue = this.dataDateToInputValue(dateStr);
+        } else if (this.isFullDateString(dateStr)) {
+          dateInputValue = this.dataDateToInputValue(dateStr);
+        } else {
+          dateError = dateStr
+            ? "Invalid date (use DD/MM/YYYY)"
+            : "Date required";
         }
-        const dateInputValue = this.dataDateToInputValue(dateStr);
+        if (!milestone.label || !milestone.label.trim()) {
+          milestone.label = milestone.name || "Milestone";
+        }
+        const labelValue = milestone.label;
+        const tooltipValue = milestone.name || "";
+        const dateFieldClasses = ["field", "is-small", "date-field"];
+        if (dateError) dateFieldClasses.push("has-error");
+        const typeOptions = ["start", "end", "node"]
+          .map(
+            (t) =>
+              `<option value="${t}" ${
+                milestone.type === t ? "selected" : ""
+              }>${this.getTypeIcon(t)} ${this.getTypeLabel(t)}</option>`
+          )
+          .join("");
+
         mEl.innerHTML = `
-          <select class="m-type-select" data-tidx="${trackIndex}" data-midx="${mIndex}">
-            ${[
-              "start",
-              "end",
-              "submission",
-              "review",
-              "notification",
-              "abstract",
-              "invitation",
-              "cameraReady",
-            ]
-              .map(
-                (t) =>
-                  `<option value="${t}" ${
-                    milestone.type === t ? "selected" : ""
-                  }>${this.getTypeIcon(t)}</option>`
-              )
-              .join("")}
-          </select>
-          <input type="date" class="m-date-input" value="${dateInputValue}" data-tidx="${trackIndex}" data-midx="${mIndex}">
-          <input type="text" class="m-name-input" value="${
-            milestone.name
-          }" data-tidx="${trackIndex}" data-midx="${mIndex}" placeholder="Milestone Name">
-          <button class="btn-icon delete-milestone-btn" data-tidx="${trackIndex}" data-midx="${mIndex}" title="Delete">&times;</button>
+          <div class="box milestone-card">
+            <div class="columns is-variable is-1 is-mobile milestone-grid">
+              <div class="column is-7">
+                <div class="field is-small">
+                  <label class="label is-size-7 has-text-grey">Label</label>
+                  <div class="control">
+                    <input type="text" class="input is-small m-label-input" value="${labelValue}" data-tidx="${trackIndex}" data-midx="${mIndex}" placeholder="Shown on timeline">
+                  </div>
+                </div>
+                <div class="field is-small">
+                  <label class="label is-size-7 has-text-grey">Tooltip</label>
+                  <div class="control">
+                    <input type="text" class="input is-small m-tooltip-input" value="${tooltipValue}" data-tidx="${trackIndex}" data-midx="${mIndex}" placeholder="Defaults to label">
+                  </div>
+                </div>
+              </div>
+              <div class="column is-5">
+                <div class="${dateFieldClasses.join(" ")}">
+                  <label class="label is-size-7 has-text-grey">Date</label>
+                  <div class="control">
+                    <input type="date" class="input is-small m-date-input" value="${dateInputValue}" data-tidx="${trackIndex}" data-midx="${mIndex}" ${
+          dateError ? 'aria-invalid="true"' : ""
+        }>
+                  </div>
+                  ${
+                    dateError
+                      ? `<p class="help is-danger" data-tidx="${trackIndex}" data-midx="${mIndex}">${dateError}</p>`
+                      : ""
+                  }
+                </div>
+                <div class="field is-small">
+                  <label class="label is-size-7 has-text-grey">Type</label>
+                  <div class="control">
+                    <div class="select is-small is-fullwidth">
+                      <select class="m-type-select" data-tidx="${trackIndex}" data-midx="${mIndex}">
+                        ${typeOptions}
+                      </select>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="milestone-footer">
+              <div class="milestone-actions">
+                <div class="dropdown is-right milestone-actions-dropdown">
+                  <div class="dropdown-trigger">
+                    <button class="button is-light is-small m-actions-btn" aria-haspopup="true" aria-controls="milestone-actions-menu" data-tidx="${trackIndex}" data-midx="${mIndex}">
+                      <span class="icon"><i class="fas fa-ellipsis-h"></i></span>
+                    </button>
+                  </div>
+                  <div class="dropdown-menu" role="menu">
+                    <div class="dropdown-content">
+                      <a class="dropdown-item m-action-duplicate" data-tidx="${trackIndex}" data-midx="${mIndex}">
+                        <span class="icon is-small"><i class="fas fa-clone"></i></span>
+                        <span>Duplicate</span>
+                      </a>
+                      <a class="dropdown-item m-action-calendar" data-tidx="${trackIndex}" data-midx="${mIndex}">
+                        <span class="icon is-small"><i class="fas fa-calendar-plus"></i></span>
+                        <span>Link to calendar</span>
+                      </a>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <button class="button is-danger is-light is-small delete-milestone-btn" data-tidx="${trackIndex}" data-midx="${mIndex}" title="Delete">
+                <span class="icon"><i class="fas fa-trash"></i></span>
+                <span>Remove</span>
+              </button>
+            </div>
+          </div>
         `;
         milestonesContainer.appendChild(mEl);
       });
@@ -300,8 +458,24 @@ export class TimelineBuilder {
       abstract: "📝",
       invitation: "✉️",
       cameraReady: "🖨️",
+      node: "🔘",
     };
     return icons[type] || "•";
+  }
+
+  getTypeLabel(type) {
+    const labels = {
+      start: "Start",
+      end: "End",
+      submission: "Submission",
+      review: "Review",
+      notification: "Notification",
+      abstract: "Abstract",
+      invitation: "Invitation",
+      cameraReady: "Camera Ready",
+      node: "Node",
+    };
+    return labels[type] || type;
   }
 
   moveTrackUp(trackIndex) {
@@ -324,6 +498,54 @@ export class TimelineBuilder {
     ];
     this.renderEditor();
     this.updatePreview();
+  }
+
+  duplicateMilestone(trackIndex, milestoneIndex) {
+    const track = this.data[trackIndex];
+    if (!track) return;
+    const original = track.dates[milestoneIndex];
+    if (!original) return;
+    const clone = JSON.parse(JSON.stringify(original));
+    const baseLabel = original.label || original.name || "Milestone";
+    const baseName = original.name || baseLabel;
+    clone.label = `${baseLabel} (copy)`;
+    clone.name = `${baseName} (copy)`;
+    track.dates.splice(milestoneIndex + 1, 0, clone);
+    this.renderEditor();
+    this.updatePreview();
+  }
+
+  openCalendarLink(trackIndex, milestoneIndex) {
+    const track = this.data[trackIndex];
+    const milestone = track?.dates[milestoneIndex];
+    if (!milestone) return;
+    const normalized = this.normalizeDateString(milestone.date);
+    if (!normalized) {
+      alert("Please provide a valid date before creating a calendar link.");
+      return;
+    }
+    const [day, month, year] = normalized.split("/").map(Number);
+    const start = new Date(year, month - 1, day);
+    const end = new Date(start);
+    end.setDate(end.getDate() + 1);
+    const fmt = (date) =>
+      `${date.getFullYear()}${String(date.getMonth() + 1).padStart(
+        2,
+        "0"
+      )}${String(date.getDate()).padStart(2, "0")}`;
+    const params = new URLSearchParams({
+      action: "TEMPLATE",
+      text: milestone.label || milestone.name || "Timeline milestone",
+      details:
+        milestone.name ||
+        milestone.label ||
+        `${track?.track || "Timeline"} milestone`,
+      dates: `${fmt(start)}/${fmt(end)}`,
+    });
+    window.open(
+      `https://calendar.google.com/calendar/render?${params.toString()}`,
+      "_blank"
+    );
   }
 
   attachEditorListeners() {
@@ -364,6 +586,16 @@ export class TimelineBuilder {
         this.moveTrackDown(parseInt(target.dataset.idx));
       });
     });
+    document.querySelectorAll(".track-collapse-btn").forEach((el) => {
+      el.addEventListener("click", (e) => {
+        const target = e.currentTarget;
+        const idx = parseInt(target.dataset.idx, 10);
+        const track = this.data[idx];
+        const current = this.trackCollapseState.get(track) || false;
+        this.trackCollapseState.set(track, !current);
+        this.renderEditor();
+      });
+    });
 
     // Milestone inputs
     // Handle changes from native date inputs
@@ -380,12 +612,41 @@ export class TimelineBuilder {
         this.updatePreview();
       });
     });
-    document.querySelectorAll(".m-name-input").forEach((el) => {
+    document.querySelectorAll(".m-label-input").forEach((el) => {
       el.addEventListener("input", (e) => {
         const target = e.currentTarget;
-        this.data[target.dataset.tidx].dates[target.dataset.midx].name =
-          target.value;
+        const { tidx, midx } = target.dataset;
+        this.data[tidx].dates[midx].label = target.value;
         this.updatePreview();
+      });
+      el.addEventListener("blur", (e) => {
+        const target = e.currentTarget;
+        const { tidx, midx } = target.dataset;
+        if (!target.value.trim()) {
+          const fallback =
+            this.data[tidx].dates[midx].name ||
+            this.data[tidx].dates[midx].date;
+          this.data[tidx].dates[midx].label = fallback;
+          target.value = fallback;
+          this.updatePreview();
+        }
+      });
+    });
+    document.querySelectorAll(".m-tooltip-input").forEach((el) => {
+      el.addEventListener("input", (e) => {
+        const target = e.currentTarget;
+        const { tidx, midx } = target.dataset;
+        this.data[tidx].dates[midx].name = target.value;
+        this.updatePreview();
+      });
+      el.addEventListener("blur", (e) => {
+        const target = e.currentTarget;
+        if (!target.value.trim()) {
+          target.value = "";
+          const { tidx, midx } = target.dataset;
+          this.data[tidx].dates[midx].name = "";
+          this.updatePreview();
+        }
       });
     });
     document.querySelectorAll(".m-type-select").forEach((el) => {
@@ -411,21 +672,48 @@ export class TimelineBuilder {
         this.data[target.dataset.idx].dates.push({
           date: new Date().toLocaleDateString("en-GB"),
           name: "New Milestone",
+          label: "New Milestone",
           type: "submission",
         });
         this.renderEditor();
         this.updatePreview();
       });
     });
+    document.querySelectorAll(".m-actions-btn").forEach((el) => {
+      el.addEventListener("click", (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        const dropdown = e.currentTarget.closest(".milestone-actions-dropdown");
+        this.toggleDropdown(dropdown);
+      });
+    });
+    document.querySelectorAll(".m-action-duplicate").forEach((el) => {
+      el.addEventListener("click", (e) => {
+        e.preventDefault();
+        const { tidx, midx } = e.currentTarget.dataset;
+        this.duplicateMilestone(parseInt(tidx, 10), parseInt(midx, 10));
+        this.closeAllDropdowns();
+      });
+    });
+    document.querySelectorAll(".m-action-calendar").forEach((el) => {
+      el.addEventListener("click", (e) => {
+        e.preventDefault();
+        const { tidx, midx } = e.currentTarget.dataset;
+        this.openCalendarLink(parseInt(tidx, 10), parseInt(midx, 10));
+        this.closeAllDropdowns();
+      });
+    });
   }
 
   addTrack() {
     const todayStr = new Date().toLocaleDateString("en-GB");
-    this.data.push({
+    const newTrack = {
       track: "New Track",
       color: "#333333",
-      dates: [{ date: todayStr, name: "Start", type: "start" }],
-    });
+      dates: [{ date: todayStr, name: "Start", label: "Start", type: "start" }],
+    };
+    this.data.push(newTrack);
+    this.trackCollapseState.set(newTrack, false);
     this.renderEditor();
     this.updatePreview();
   }
